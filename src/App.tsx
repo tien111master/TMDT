@@ -133,6 +133,12 @@ const canAccessAdminArea = (user: UserSession | null) => {
   );
 };
 
+// Chatbot chỉ dành cho khách hàng đã đăng nhập — không hiện khi chưa login
+// hoặc khi đang login bằng tài khoản nhân viên/quản trị.
+const isCustomerUser = (user: UserSession | null) => {
+  return user !== null && !canAccessAdminArea(user);
+};
+
 export default function App() {
   const PRODUCT_PAGE_SIZE = 12;
   const CART_STORAGE_KEY = "luxehome_cart";
@@ -971,7 +977,9 @@ const handleUpdateProductStock = async (productId: string, newStock: number) => 
           <AuthModal onClose={handleCloseAuth} onLogin={handleLogin} />
         </Suspense>
       )}
-      <ChatbotWidget products={products} onSelectProduct={(p) => setSelectedProductForDetail(p)} />
+      {isCustomerUser(currentUser) && (
+        <ChatbotWidget products={products} onSelectProduct={(p) => setSelectedProductForDetail(p)} />
+      )}
 
       {placedOrderForEmail && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-55 flex items-center justify-center p-4 overflow-y-auto">

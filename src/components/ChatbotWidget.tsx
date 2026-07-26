@@ -7,6 +7,26 @@ interface ChatbotWidgetProps {
   onSelectProduct: (product: Product) => void;
 }
 
+// Danh sách từ khoá trong phạm vi tư vấn nội thất — dùng để chặn câu hỏi lạc đề
+// ở chế độ offline (khi không gọi được API backend/Gemini).
+const FURNITURE_SCOPE_KEYWORDS = [
+  "sofa", "bàn", "ghế", "giường", "tủ", "nệm", "kệ", "đèn", "nội thất",
+  "gỗ", "da bò", "da nappa", "vải", "nhung", "kính",
+  "phòng khách", "phòng ngủ", "phòng ăn", "phòng bếp", "văn phòng",
+  "giao hàng", "bảo hành", "đổi trả", "thanh toán", "giá", "combo",
+  "màu sắc", "kích thước", "chất liệu", "lắp đặt", "showroom", "đơn hàng",
+  "tư vấn", "thiết kế", "trang trí", "phối cảnh", "vệ sinh", "bảo dưỡng",
+  "royal", "carrara", "velour", "aurora", "nordic", "milano", "prestige", "ergonomic",
+];
+
+const isInScopeQuestion = (text: string): boolean => {
+  const input = text.toLowerCase();
+  return FURNITURE_SCOPE_KEYWORDS.some((kw) => input.includes(kw));
+};
+
+const OUT_OF_SCOPE_REPLY =
+  "Dạ, LuxeHome hiện chỉ chuyên tư vấn về các sản phẩm và giải pháp nội thất cao cấp trong showroom của mình. Rất tiếc em chưa thể hỗ trợ câu hỏi này ạ! Anh/Chị có cần tư vấn thêm về nội thất không ạ?";
+
 export default function ChatbotWidget({ products, onSelectProduct }: ChatbotWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<{ role: "user" | "model"; content: string }[]>([
@@ -33,6 +53,11 @@ export default function ChatbotWidget({ products, onSelectProduct }: ChatbotWidg
 
   const getSmartOfflineTextFallback = (userInput: string): string => {
     const input = userInput.toLowerCase();
+
+    // Chặn câu hỏi ngoài phạm vi nội thất LuxeHome ngay cả ở chế độ offline
+    if (!isInScopeQuestion(userInput)) {
+      return OUT_OF_SCOPE_REPLY;
+    }
     
     if (input.includes("sofa") || input.includes("royal") || input.includes("signature") || input.includes("phòng khách")) {
       return "Dạ, LuxeHome nhận thấy Anh/Chị đang quan tâm đến nội thất tiếp khách sang tươm. Em khuyên dùng tuyệt phẩm Sofa giường góc độc kiêu 'Sofa Da Bò Ý Tự Nhiên - Royal Signature' bọc da Full Grain cao sang tột bực.";
@@ -177,8 +202,8 @@ export default function ChatbotWidget({ products, onSelectProduct }: ChatbotWidg
             if (pName.includes(matchedName) || matchedName.includes(pName)) return true;
             
             // split words, if at least 2 key words of length > 2 intersect, count as matched!
-            const pWords = pName.split(/[\s-]+/).filter(w => w.length > 2);
-            const mWords = matchedName.split(/[\s-]+/).filter(w => w.length > 2);
+            const pWords = pName.split(/[\s-]+/).filter((w: string) => w.length > 2);
+            const mWords = matchedName.split(/[\s-]+/).filter((w: string) => w.length > 2);
             const intersection = pWords.filter(w => mWords.includes(w));
             return intersection.length >= 2;
           });
