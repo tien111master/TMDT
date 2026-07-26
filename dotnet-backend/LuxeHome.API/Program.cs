@@ -15,17 +15,16 @@ using LuxeHome.Application.Services;
 using LuxeHome.API.Configurations;
 using Microsoft.Extensions.FileProviders;
 
+// QUAN TRỌNG: phải set TRƯỚC khi gọi CreateBuilder — tắt file-watcher mặc định
+// của ASP.NET Core (nguyên nhân crash "inotify instances" trên Render/Docker).
+Environment.SetEnvironmentVariable("DOTNET_hostBuilder__reloadConfigOnChange", "false");
 
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 // Nạp GEMINI_API_KEY từ .env.local ở root repo (cùng file frontend đang dùng)
 TryLoadEnvLocal();
 
-var builder = WebApplication.CreateBuilder(new WebApplicationOptions
-{
-    Args = args,
-    EnvironmentName = Environments.Production
-});
+var builder = WebApplication.CreateBuilder(args);
 
 static void TryLoadEnvLocal()
 {
@@ -47,7 +46,6 @@ static void TryLoadEnvLocal()
                 var value = line[(eq + 1)..].Trim().Trim('"').Trim('\'');
                 if (string.IsNullOrEmpty(key)) continue;
 
-                // Không ghi đè biến môi trường đã set sẵn (launchSettings / CI)
                 if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable(key)))
                     Environment.SetEnvironmentVariable(key, value);
             }
@@ -60,9 +58,12 @@ static void TryLoadEnvLocal()
     }
 }
 
-builder.Configuration
-    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
-    .AddEnvironmentVariables();
+var apiFolderPath = Path.Combine(Directory.GetCurrentDirectory(), "LuxeHome.API");
+var configBasePath = Directory.Exists(apiFolderPath) ? apiFolderPath : Directory.GetCurrentDirectory();
+
+builder.Configuration.SetBasePath(configBasePath)
+                     .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
+                     .AddEnvironmentVariables();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
@@ -77,7 +78,7 @@ builder.Services.AddHangfire(config => config
     .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
     .UseSimpleAssemblyNameTypeSerializer()
     .UseRecommendedSerializerSettings()
-    .UsePostgreSqlStorage(connectionString)); // Lưu queue vào PostgreSQL
+    .UsePostgreSqlStorage(connectionString));
 
 builder.Services.AddHangfireServer();
 builder.Services.AddScoped<IPriceUpdateJob, PriceUpdateJob>();
@@ -130,8 +131,7 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = false,
         ClockSkew = TimeSpan.Zero
     };
-    
-    // THÊM ĐOẠN NÀY ĐỂ DEBUG
+
     options.Events = new JwtBearerEvents
     {
         OnAuthenticationFailed = context =>
@@ -143,15 +143,13 @@ builder.Services.AddAuthentication(options =>
 });
 builder.Services.AddHttpClient<IAIService, GeminiAIService>();
 
-// Đăng ký các UseCase Nghiệp vụ (prompt AI nằm trong ChatUseCase / ImageSearchUseCase)
 builder.Services.AddScoped<ChatUseCase>();
 builder.Services.AddScoped<ImageSearchUseCase>();
-builder.Services.AddScoped<UserUseCase>(); 
+builder.Services.AddScoped<UserUseCase>();
 builder.Services.AddScoped<VnPayService>();
 builder.Services.AddScoped<InventoryService>();
 builder.Services.AddScoped<OrderService>();
 
-// appsettings có ApiKey: "" nên không dùng ?? — chuỗi rỗng vẫn “truthy” với null-coalescing
 var geminiKey = builder.Configuration["Gemini:ApiKey"];
 if (string.IsNullOrWhiteSpace(geminiKey))
     geminiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY");
@@ -163,9 +161,9 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin() // Cho phép tất cả các nguồn
-              .AllowAnyMethod() // Cho phép tất cả các loại request (GET, POST, PUT, DELETE...)
-              .AllowAnyHeader(); // Cho phép tất cả các header
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
     });
 });
 var app = builder.Build();
@@ -191,13 +189,12 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseSwagger();
-app.UseSwaggerUI(c => 
+app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "LuxeHome API V1");
     c.RoutePrefix = "swagger";
 });
 
-// Kích hoạt Authentication trước Authorization
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseHangfireDashboard("/hangfire");
@@ -244,7 +241,7 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var context = services.GetRequiredService<LuxeHomeDbContext>();
-        await context.Database.MigrateAsync(); 
+        await context.Database.MigrateAsync();
         var configuration = services.GetRequiredService<IConfiguration>();
         bool enableSeeding = configuration.GetValue<bool>("SeedDataConfig:EnableSeeding");
         await DataSeeder.SeedAsync(context, enableSeeding);
