@@ -16,8 +16,10 @@ const toPascalCase = (obj: any): any => {
   return obj;
 };
 
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5200';
+
 const api = axios.create({
-  baseURL: 'http://localhost:5200',
+  baseURL: API_BASE_URL,
   timeout: 10000,
   headers: {
     'ngrok-skip-browser-warning': 'true',
@@ -286,6 +288,10 @@ export const promotionApi = {
   },
   end: async (id: number) => {
     const response = await api.put(`/api/Promotions/${id}/end`);
+    return response.data;
+  },
+  toggleVisibility: async (id: number, isHidden: boolean) => {
+    const response = await api.put(`/api/Promotions/${id}/visibility`, { isHidden });
     return response.data;
   },
 

@@ -1,0 +1,10 @@
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+**/Migrations_backup/
+**/Migrations_backup_OLD/
+.git/
+.gitignore
+*.sql
+appsettings.Development.json

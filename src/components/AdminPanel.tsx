@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { API_BASE_URL } from '../api/api';
 import { BarChart3, Package, ShoppingCart, Users, Tag, Layers, DollarSign, Truck, RotateCcw } from "lucide-react";
 import { Product, Order, ConsultationSchedule, Coupon, BlogPost } from "../types";
 
@@ -89,7 +90,7 @@ export default function AdminPanel(props: AdminPanelProps) {
 
   // Fetch danh mục dùng chung cho ProductsTab và CategoriesTab
   useEffect(() => {
-    fetch("http://localhost:5200/api/categories")
+    fetch(`${API_BASE_URL}/api/categories`)
       .then(res => res.json())
       .then(data => setCategories(data))
       .catch(err => console.error("Lỗi lấy danh mục:", err));

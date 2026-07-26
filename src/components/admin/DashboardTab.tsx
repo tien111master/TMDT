@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
+import { API_BASE_URL } from '../../api/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { FileSpreadsheet, Filter, AlertCircle } from "lucide-react";
 import { Order } from "../../types";
@@ -86,7 +87,7 @@ export default function DashboardTab() {
   const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
-    fetch("http://localhost:5200/api/categories")
+    fetch(`${API_BASE_URL}/api/categories`)
       .then((res) => res.json())
       .then((data) => setCategories(data))
       .catch((err) => console.error("Lỗi lấy danh mục:", err));

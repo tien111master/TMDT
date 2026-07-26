@@ -35,6 +35,7 @@ namespace LuxeHome.API.Controllers
                     p.Status != null &&
                     p.CouponCode != null &&
                     p.Status.ToUpper() == "ACTIVE" &&
+                    !p.IsHidden &&
                     (p.StartedAt == null || p.StartedAt <= now) &&
                     (p.EndedAt == null || p.EndedAt >= now)
                 )
@@ -67,6 +68,7 @@ namespace LuxeHome.API.Controllers
                 .Where(p =>
                     p.Status != null &&
                     p.Status.ToUpper() == "ACTIVE" &&
+                    !p.IsHidden &&
                     p.CouponCode != null &&
                     (p.StartedAt == null || p.StartedAt <= now) &&
                     (p.EndedAt == null || p.EndedAt >= now) &&
@@ -110,7 +112,8 @@ namespace LuxeHome.API.Controllers
                     p.EndedAt,
                     p.UsageLimit,
                     p.UsedCount,
-                    p.Status
+                    p.Status,
+                    p.IsHidden
                 })
                 .ToListAsync();
 
@@ -194,6 +197,22 @@ namespace LuxeHome.API.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Đã kết thúc/hủy chương trình khuyến mãi.", status = "Ended" });
+        }
+
+        [HttpPut("{id}/visibility")]
+        public async Task<IActionResult> ToggleVisibility(long id, [FromBody] ToggleVisibilityDto dto)
+        {
+            var promotion = await _context.Promotions.FindAsync(id);
+            if (promotion == null) return NotFound(new { message = "Không tìm thấy chương trình khuyến mãi." });
+
+            promotion.IsHidden = dto.IsHidden;
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                message = dto.IsHidden ? "Đã ẩn mã giảm giá." : "Đã hiện lại mã giảm giá.",
+                isHidden = promotion.IsHidden
+            });
         }
 
         private async Task<string?> ValidatePromotionAsync(

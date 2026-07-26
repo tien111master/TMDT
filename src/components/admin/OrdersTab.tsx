@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { API_BASE_URL } from '../../api/api';
 import { Eye, Download, X, AlertTriangle, PackageX } from "lucide-react";
 import { Order } from "../../types";
 import { shipmentApi } from "../../api/api";
@@ -196,7 +197,7 @@ export default function OrdersTab({ orders: propOrders, onUpdateOrderStatus }: O
 
   const fetchAdminOrders = async () => {
     try {
-      const response = await fetch("http://localhost:5200/api/Orders/admin-all");
+      const response = await fetch(`${API_BASE_URL}/api/Orders/admin-all`);
       if (response.ok) {
         const data = await response.json();
         setLocalOrders(data);
@@ -234,7 +235,7 @@ export default function OrdersTab({ orders: propOrders, onUpdateOrderStatus }: O
   const handleProcessWorkflow = async (id: string, action: string, body?: any) => {
     clearStockAlerts();
     try {
-      const response = await fetch(`http://localhost:5200/api/Orders/${id}/${action}`, {
+      const response = await fetch(`${API_BASE_URL}/api/Orders/${id}/${action}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: body ? JSON.stringify(body) : null,

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Tag, Plus, X, Edit3, Ban, AlertCircle, Check } from "lucide-react";
+import { Tag, Plus, X, Edit3, Ban, AlertCircle, Check, Eye, EyeOff } from "lucide-react";
 import { promotionApi } from "../../api/api";
+
 
 // Component quản lý khuyến mãi cho Admin — theo đúng sơ đồ AD_Tạo chương trình khuyến mãi
 // 3 nhánh thao tác: Tạo mới / Cập nhật / Kết thúc-Hủy
@@ -18,6 +19,7 @@ interface AdminPromotion {
   usageLimit: number | null;
   usedCount: number | null;
   status: string;
+  isHidden: boolean;
 }
 
 interface FormState {
@@ -119,6 +121,19 @@ export default function CouponsTab() {
     setMode("list");
     setEditingId(null);
     setFormError(null);
+  };
+
+  const handleToggleVisibility = async (p: AdminPromotion) => {
+    try {
+      await promotionApi.toggleVisibility(p.id, !p.isHidden);
+      setPromotions((prev) =>
+        prev.map((item) =>
+          item.id === p.id ? { ...item, isHidden: !p.isHidden } : item
+        )
+      );
+    } catch (err: any) {
+      alert(err?.response?.data?.message || "Lỗi khi thay đổi trạng thái hiển thị.");
+    }
   };
 
   // "Kiểm tra tính hợp lệ" -> Hợp lệ: Lưu / Không hợp lệ: Thông báo lỗi (giữ form mở để "Chỉnh sửa lại điều kiện")
@@ -350,14 +365,15 @@ export default function CouponsTab() {
                 <th className="p-4 text-center">Giá Trị</th>
                 <th className="p-4 text-center">Thời Gian</th>
                 <th className="p-4 text-center">Trạng Thái</th>
+                <th className="p-4 text-center">Hiển Thị</th>
                 <th className="p-4 text-center">Hành Động</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#EADBC8]/40">
               {loading ? (
-                <tr><td colSpan={6} className="p-8 text-center text-gray-400">Đang tải...</td></tr>
+                <tr><td colSpan={7} className="p-8 text-center text-gray-400">Đang tải...</td></tr>
               ) : promotions.length === 0 ? (
-                <tr><td colSpan={6} className="p-8 text-center text-gray-400">Chưa có chương trình khuyến mãi nào.</td></tr>
+                <tr><td colSpan={7} className="p-8 text-center text-gray-400">Chưa có chương trình khuyến mãi nào.</td></tr>
               ) : (
                 promotions.map((p) => {
                   const isEnded = p.status === "Ended";
@@ -399,24 +415,48 @@ export default function CouponsTab() {
                         })()}
                       </td>
                       <td className="p-4 text-center">
-                        {!isEnded && (
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              onClick={() => openEditForm(p)}
-                              className="text-amber-600 hover:bg-amber-50 p-1.5 rounded border border-transparent hover:border-amber-200"
-                              title="Cập nhật"
-                            >
-                              <Edit3 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleEnd(p)}
-                              className="text-red-500 hover:bg-red-50 p-1.5 rounded border border-transparent hover:border-red-200"
-                              title="Kết thúc/Hủy"
-                            >
-                              <Ban className="w-4 h-4" />
-                            </button>
-                          </div>
-                        )}
+                        <span
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${
+                            p.isHidden
+                              ? "bg-gray-200 text-gray-600"
+                              : "bg-blue-50 text-blue-700 border border-blue-200"
+                          }`}
+                        >
+                          {p.isHidden ? "Đang Ẩn" : "Đang Hiện"}
+                        </span>
+                      </td>
+                      <td className="p-4 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          {!isEnded && (
+                            <>
+                              <button
+                                onClick={() => openEditForm(p)}
+                                className="text-amber-600 hover:bg-amber-50 p-1.5 rounded border border-transparent hover:border-amber-200"
+                                title="Cập nhật"
+                              >
+                                <Edit3 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleEnd(p)}
+                                className="text-red-500 hover:bg-red-50 p-1.5 rounded border border-transparent hover:border-red-200"
+                                title="Kết thúc/Hủy"
+                              >
+                                <Ban className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                          <button
+                            onClick={() => handleToggleVisibility(p)}
+                            className={`p-1.5 rounded border border-transparent ${
+                              p.isHidden
+                                ? "text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200"
+                                : "text-gray-500 hover:bg-gray-100 hover:border-gray-300"
+                            }`}
+                            title={p.isHidden ? "Hiện mã giảm giá" : "Ẩn mã giảm giá"}
+                          >
+                            {p.isHidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

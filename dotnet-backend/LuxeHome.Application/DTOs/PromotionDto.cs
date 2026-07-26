@@ -45,4 +45,10 @@ namespace LuxeHome.Application.DTOs
 
         public int? UsageLimit { get; set; }
     }
+
+    // "Ẩn/Hiện mã giảm giá" — không phụ thuộc Status
+    public class ToggleVisibilityDto
+    {
+        public bool IsHidden { get; set; }
+    }
 }

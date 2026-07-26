@@ -655,6 +655,8 @@ public partial class LuxeHomeDbContext : DbContext
             entity.HasIndex(e => e.CouponCode, "promotions_coupon_code_key").IsUnique();
 
             entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.IsHidden)
+            .HasColumnName("is_hidden");
             entity.Property(e => e.CouponCode)
                 .HasMaxLength(80)
                 .HasColumnName("coupon_code");

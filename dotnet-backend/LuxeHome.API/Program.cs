@@ -57,7 +57,9 @@ static void TryLoadEnvLocal()
 }
 
 var apiFolderPath = Path.Combine(Directory.GetCurrentDirectory(), "LuxeHome.API");
-builder.Configuration.SetBasePath(apiFolderPath)
+var configBasePath = Directory.Exists(apiFolderPath) ? apiFolderPath : Directory.GetCurrentDirectory();
+
+builder.Configuration.SetBasePath(configBasePath)
                      .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                      .AddEnvironmentVariables();
 
@@ -253,4 +255,5 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-app.Run("http://localhost:5200");
+var port = Environment.GetEnvironmentVariable("PORT") ?? "5200";
+app.Run($"http://0.0.0.0:{port}");

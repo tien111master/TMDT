@@ -4,6 +4,7 @@
  */
 
 import React, { lazy, Suspense, useCallback, useState } from "react";
+import { API_BASE_URL } from './api/api';
 import Navbar from "./components/Navbar";
 import HomeView from "./components/HomeView";
 import CatalogView from "./components/CatalogView";
@@ -274,7 +275,7 @@ const savedRole = sessionStorage.getItem("user_role");
 }, []);
 
   useEffect(() => {
-    fetch("http://localhost:5200/api/promotions")
+    fetch(`${API_BASE_URL}/api/promotions`)
     .then(res => {
       if (!res.ok) throw new Error("Lỗi mạng khi lấy Coupons");
       return res.json();
@@ -346,7 +347,7 @@ const savedRole = sessionStorage.getItem("user_role");
 }, []);
   const fetchCatalogProducts = useCallback((page: number) => {
     setIsCatalogLoading(true);
-    fetch(`http://localhost:5200/api/products?page=${page}&pageSize=${PRODUCT_PAGE_SIZE}`)
+    fetch(`${API_BASE_URL}/api/products?page=${page}&pageSize=${PRODUCT_PAGE_SIZE}`)
       .then(res => {
         if (!res.ok) throw new Error("Cổng API Backend từ chối kết nối");
         return res.json();
@@ -650,7 +651,7 @@ const savedRole = sessionStorage.getItem("user_role");
         initialStock: newProd.stock
       };
   
-      const response = await fetch("http://localhost:5200/api/products", {
+      const response = await fetch(`${API_BASE_URL}/api/products`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -692,7 +693,7 @@ const savedRole = sessionStorage.getItem("user_role");
     const isConfirmed = window.confirm("Anh/Chị có chắc chắn muốn ngừng kinh doanh sản phẩm này?");
     if (!isConfirmed) return;
     try {
-      const response = await fetch(`http://localhost:5200/api/products/${productId}`, { method: 'DELETE' });
+      const response = await fetch(`${API_BASE_URL}/api/products/${productId}`, { method: 'DELETE' });
       if (!response.ok) throw new Error("Xóa sản phẩm thất bại.");
       setProducts((prev) => prev.filter((p) => p.id !== productId));
       alert("Đã gỡ sản phẩm khỏi Showcase!");
@@ -719,7 +720,7 @@ const savedRole = sessionStorage.getItem("user_role");
       payload.imageUrl = updatedProduct.images[0];
     }
 
-    const response = await fetch(`http://localhost:5200/api/products/${updatedProduct.id}`, {
+    const response = await fetch(`${API_BASE_URL}/api/products/${updatedProduct.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -740,7 +741,7 @@ const savedRole = sessionStorage.getItem("user_role");
 
 const handleUpdateProductStock = async (productId: string, newStock: number) => {
   try {
-    const response = await fetch(`http://localhost:5200/api/products/${productId}/stock`, {
+    const response = await fetch(`${API_BASE_URL}/api/products/${productId}/stock`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ newStock }), // 👑 SỬA: khớp với UpdateStockDto { NewStock }

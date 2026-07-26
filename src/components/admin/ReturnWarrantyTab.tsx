@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { API_BASE_URL } from '../../api/api';
 import { RotateCcw, RefreshCw, CheckCircle2, XCircle, PackageCheck } from "lucide-react";
 import { returnWarrantyApi, productSearchApi } from "../../api/api";
 
@@ -255,12 +256,12 @@ const handleSelectExchangeVariant = (item: any) => {
                         .map((url: string, idx: number) => (
                         <a
                             key={idx}
-                            href={`http://localhost:5200${url}`}
+                            href={`${API_BASE_URL}${url}`}
                             target="_blank"
                             rel="noreferrer"
                         >
                             <img
-                            src={`http://localhost:5200${url}`}
+                            src={`${API_BASE_URL}${url}`}
                             alt={`Ảnh minh chứng ${idx + 1}`}
                             className="w-full h-20 object-cover rounded-lg border border-[#EADBC8] hover:opacity-80 transition-opacity"
                             />

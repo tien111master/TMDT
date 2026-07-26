@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from "react";
+import { API_BASE_URL } from '../../api/api';
 import { Package, Search, Filter, Plus, X, Edit3, Trash2, ChevronLeft, ChevronRight, Image as ImageIcon, Globe, Check, DollarSign, Save } from "lucide-react";
 import { Product } from "../../types";
 import { Category } from "../AdminPanel"; 
@@ -61,7 +62,7 @@ export default function ProductsTab({ categories, onUpdateProductStock, onAddPro
   const fetchPaginatedProducts = async () => {
     setIsLoadingProducts(true);
     try {
-      const res = await fetch(`http://localhost:5200/api/products?page=${currentPage}&pageSize=10&search=${debouncedSearch}&category=${selectedCategoryFilter}`);
+      const res = await fetch(`${API_BASE_URL}/api/products?page=${currentPage}&pageSize=10&search=${debouncedSearch}&category=${selectedCategoryFilter}`);
       if (res.ok) {
         const data = await res.json();
         setTotalPages(data.totalPages || data.TotalPages || 1);

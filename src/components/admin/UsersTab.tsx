@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { API_BASE_URL } from '../../api/api';
 import { Users, RefreshCw, X } from "lucide-react";
 
 interface DBUser {
@@ -23,7 +24,7 @@ export default function UsersTab() {
   const fetchAllUsersFromDb = async () => {
     setLoadingLoadingUsers(true);
     try {
-      const response = await fetch("http://localhost:5200/api/admin/users", {
+      const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
         method: "GET",
         headers: {
           "Authorization": `Bearer ${sessionStorage.getItem("token")}`, 
@@ -57,7 +58,7 @@ export default function UsersTab() {
     e.preventDefault();
     if (!editingUser) return;
     try {
-      const response = await fetch(`http://localhost:5200/api/admin/users/${editingUser.id}/role`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/users/${editingUser.id}/role`, {
         method: "PUT",
         headers: { "Authorization": `Bearer ${sessionStorage.getItem("token")}`, "Content-Type": "application/json" },
         body: JSON.stringify({ roleCode: editRoleCode, fullName: editFullName, phone: editPhone, status: editStatus })

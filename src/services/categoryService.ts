@@ -1,5 +1,5 @@
-
-const API_URL = 'https://localhost:5200/api/categories'; 
+import { API_BASE_URL } from '../api/api';
+const API_URL = `${API_BASE_URL}/api/categories`; 
 export interface Category {
   id: number;
   parentId: number | null;

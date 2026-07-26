@@ -28,4 +28,6 @@ public partial class Promotion
     public int? UsedCount { get; set; }
 
     public string? Status { get; set; }
+
+    public bool IsHidden { get; set; } = false;
 }

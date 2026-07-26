@@ -1,7 +1,9 @@
 import React, { useState, useMemo } from "react";
+import { API_BASE_URL } from '../../api/api';
 // Nhớ thêm import ChevronLeft, ChevronRight để làm icon nút phân trang
 import { Layers, Edit3, Trash2, Check, X, ChevronLeft, ChevronRight } from "lucide-react"; 
 import { Category } from "../AdminPanel";
+
 
 interface CategoriesTabProps {
   categories: Category[];
@@ -40,7 +42,7 @@ export default function CategoriesTab({ categories, setCategories }: CategoriesT
     e.preventDefault();
     try {
       const slug = newCatName.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
-      const res = await fetch("http://localhost:5200/api/categories", {
+      const res = await fetch(`${API_BASE_URL}/api/categories`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -69,7 +71,7 @@ export default function CategoriesTab({ categories, setCategories }: CategoriesT
   const handleDeleteCategory = async (id: number) => {
     if (!window.confirm("Cảnh báo: Bạn có chắc chắn muốn ngừng hiển thị danh mục này?")) return;
     try {
-      const res = await fetch(`http://localhost:5200/api/categories/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE_URL}/api/categories/${id}`, { method: 'DELETE' });
       if (res.ok) {
         setCategories(prev => prev.filter(c => c.id !== id));
         alert("Đã xóa danh mục thành công!");
@@ -91,7 +93,7 @@ export default function CategoriesTab({ categories, setCategories }: CategoriesT
     if (!editingCategory) return;
     const finalSlug = editCatSlug.trim() === "" ? editCatName.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') : editCatSlug;
     try {
-      const res = await fetch(`http://localhost:5200/api/categories/${editingCategory.id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/categories/${editingCategory.id}`, {
         method: 'PUT',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 

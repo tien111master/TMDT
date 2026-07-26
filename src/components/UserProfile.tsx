@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { API_BASE_URL } from '../api/api';
 import { Order, Product } from "../types";
 import { User, Phone, MapPin, Heart, ShoppingBag, Star, CheckCircle, RefreshCw, Sparkles, Ticket } from "lucide-react";
 import { authApi, orderApi, promotionApi } from "../api/api";interface UserProfileProps {
@@ -279,7 +280,7 @@ useEffect(() => {
   const getReviewImageSrc = (url: string) => {
   if (!url) return "";
   if (url.startsWith("http")) return url;
-  return `http://localhost:5200${url}`;
+  return `${API_BASE_URL}${url}`;
 };
 
   const handleSaveInfo = async (e: React.FormEvent) => {

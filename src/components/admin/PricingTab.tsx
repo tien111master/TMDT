@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { API_BASE_URL } from '../../api/api';
 import { Search, Filter, Calendar, CheckSquare, Square, FolderOpen, DollarSign, Check, Clock } from "lucide-react";
 
 interface Category { id: number; categoryName: string; slug: string; }
@@ -29,7 +30,7 @@ export default function PricingTab() {
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch("http://localhost:5200/api/categories");
+      const res = await fetch(`${API_BASE_URL}/api/categories`);
       if (res.ok) setCategories(await res.json());
     } catch (err) { console.error(err); }
   };
@@ -37,7 +38,7 @@ export default function PricingTab() {
   const fetchProductsAndExtractVariants = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch("http://localhost:5200/api/products?page=1&pageSize=100");
+      const res = await fetch(`${API_BASE_URL}/api/products?page=1&pageSize=100`);
       if (res.ok) {
         const data = await res.json();
         const productList = data.items || data.Items || [];
@@ -79,7 +80,7 @@ export default function PricingTab() {
   // Hàm gọi API lấy danh sách giá (Bảng 2)
   const fetchPriceRequests = async () => {
     try {
-      const res = await fetch("http://localhost:5200/api/productprices");
+      const res = await fetch(`${API_BASE_URL}/api/productprices`);
       if (res.ok) setPriceRequests(await res.json());
     } catch (err) { console.error("Lỗi lấy danh sách giá chờ duyệt:", err); }
   };
@@ -88,7 +89,7 @@ export default function PricingTab() {
   const handleApprovePrice = async (priceId: number) => {
     if (!window.confirm("Xác nhận duyệt mức giá này? Hệ thống sẽ tự động áp dụng khi đến thời gian đã hẹn.")) return;
     try {
-      const res = await fetch(`http://localhost:5200/api/productprices/${priceId}/approve`, { method: 'PATCH' });
+      const res = await fetch(`${API_BASE_URL}/api/productprices/${priceId}/approve`, { method: 'PATCH' });
       if (res.ok) {
         alert("Đã duyệt thành công! Bạn có thể kiểm tra tab Hangfire.");
         fetchPriceRequests(); // Reload lại bảng 2
@@ -169,7 +170,7 @@ export default function PricingTab() {
           effectiveTo: null
         };
 
-        const res = await fetch("http://localhost:5200/api/productprices/schedule", {
+        const res = await fetch(`${API_BASE_URL}/api/productprices/schedule`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)

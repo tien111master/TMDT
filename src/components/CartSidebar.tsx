@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { API_BASE_URL } from '../api/api';
 import { X, Trash2, Check, AlertCircle, ShoppingBag, Ticket, CheckCircle } from "lucide-react";
 import { CartItem, Order } from "../types";
 import { orderApi, promotionApi } from "../api/api";
@@ -217,7 +218,7 @@ const handleRemovePromotion = () => {
     console.log("Order Data:", orderData);
 
     if (paymentMethod === "VNPAY") {
-  const response = await fetch("http://localhost:5200/api/Payments/vnpay/create-payment-url", {
+  const response = await fetch(`${API_BASE_URL}/api/Payments/vnpay/create-payment-url`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

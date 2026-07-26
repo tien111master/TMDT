@@ -9,11 +9,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace LuxeHome.LuxeHome.Infrastructure.Data.Migrations
+namespace LuxeHome.Migrations
 {
     [DbContext(typeof(LuxeHomeDbContext))]
-    [Migration("20260629095245_AddBrandToProduct")]
-    partial class AddBrandToProduct
+    [Migration("20260726070019_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -252,6 +252,148 @@ namespace LuxeHome.LuxeHome.Infrastructure.Data.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("customer_addresses", (string)null);
+                });
+
+            modelBuilder.Entity("LuxeHome.Domain.Entities.CustomerCareLog", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("CareMessage")
+                        .HasColumnType("text")
+                        .HasColumnName("care_message");
+
+                    b.Property<string>("CareType")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("care_type");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CustomerId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("customer_id");
+
+                    b.Property<string>("NeedNote")
+                        .HasColumnType("text")
+                        .HasColumnName("need_note");
+
+                    b.Property<DateTime?>("NextFollowUpAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("next_follow_up_at");
+
+                    b.Property<string>("ResponseResult")
+                        .HasColumnType("text")
+                        .HasColumnName("response_result");
+
+                    b.Property<long>("StaffId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("staff_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("StaffId");
+
+                    b.ToTable("customer_care_logs");
+                });
+
+            modelBuilder.Entity("LuxeHome.Domain.Entities.CustomerChatMessage", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("content");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CustomerId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("customer_id");
+
+                    b.Property<bool>("IsReadByCustomer")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_read_by_customer");
+
+                    b.Property<bool>("IsReadByStaff")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_read_by_staff");
+
+                    b.Property<long>("SenderId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("sender_id");
+
+                    b.Property<string>("SenderRole")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("sender_role");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("SenderId");
+
+                    b.ToTable("customer_chat_messages");
+                });
+
+            modelBuilder.Entity("LuxeHome.Domain.Entities.CustomerPromotionWallet", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("PromotionId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("promotion_id");
+
+                    b.Property<DateTime?>("SavedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("saved_at");
+
+                    b.Property<string>("Status")
+                        .HasColumnType("text")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime?>("UsedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("used_at");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("customer_promotion_wallets");
                 });
 
             modelBuilder.Entity("LuxeHome.Domain.Entities.InventoryStock", b =>
@@ -590,9 +732,6 @@ namespace LuxeHome.LuxeHome.Infrastructure.Data.Migrations
                         .HasColumnType("numeric")
                         .HasColumnName("average_rating");
 
-                    b.Property<string>("Brand")
-                        .HasColumnType("text");
-
                     b.Property<string>("CanonicalUrl")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
@@ -824,6 +963,13 @@ namespace LuxeHome.LuxeHome.Infrastructure.Data.Migrations
                         .HasColumnType("text")
                         .HasColumnName("admin_reply");
 
+                    b.Property<string>("Comment")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("ImageUrl")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
@@ -979,6 +1125,10 @@ namespace LuxeHome.LuxeHome.Infrastructure.Data.Migrations
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("ended_at");
 
+                    b.Property<bool>("IsHidden")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_hidden");
+
                     b.Property<decimal?>("MaxDiscountAmount")
                         .HasPrecision(15, 2)
                         .HasColumnType("numeric(15,2)")
@@ -1034,6 +1184,18 @@ namespace LuxeHome.LuxeHome.Infrastructure.Data.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
+                    b.Property<string>("AccountInfo")
+                        .HasColumnType("text")
+                        .HasColumnName("account_info");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
                     b.Property<long?>("HandledBy")
                         .HasColumnType("bigint")
                         .HasColumnName("handled_by");
@@ -1042,6 +1204,10 @@ namespace LuxeHome.LuxeHome.Infrastructure.Data.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
                         .HasColumnName("image_url");
+
+                    b.Property<string>("ImageUrls")
+                        .HasColumnType("text")
+                        .HasColumnName("image_urls");
 
                     b.Property<long>("OrderId")
                         .HasColumnType("bigint")
@@ -1364,6 +1530,44 @@ namespace LuxeHome.LuxeHome.Infrastructure.Data.Migrations
                         .HasConstraintName("customer_addresses_user_id_fkey");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("LuxeHome.Domain.Entities.CustomerCareLog", b =>
+                {
+                    b.HasOne("LuxeHome.Domain.Entities.User", "Customer")
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LuxeHome.Domain.Entities.User", "Staff")
+                        .WithMany()
+                        .HasForeignKey("StaffId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Customer");
+
+                    b.Navigation("Staff");
+                });
+
+            modelBuilder.Entity("LuxeHome.Domain.Entities.CustomerChatMessage", b =>
+                {
+                    b.HasOne("LuxeHome.Domain.Entities.User", "Customer")
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LuxeHome.Domain.Entities.User", "Sender")
+                        .WithMany()
+                        .HasForeignKey("SenderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Customer");
+
+                    b.Navigation("Sender");
                 });
 
             modelBuilder.Entity("LuxeHome.Domain.Entities.InventoryStock", b =>

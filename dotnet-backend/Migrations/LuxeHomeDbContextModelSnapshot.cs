@@ -3,20 +3,17 @@ using System;
 using LuxeHome.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace LuxeHome.LuxeHome.Infrastructure.Data.Migrations
+namespace LuxeHome.Migrations
 {
     [DbContext(typeof(LuxeHomeDbContext))]
-    [Migration("20260715152400_UpdateDatabaseModels")]
-    partial class UpdateDatabaseModels
+    partial class LuxeHomeDbContextModelSnapshot : ModelSnapshot
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1124,6 +1121,10 @@ namespace LuxeHome.LuxeHome.Infrastructure.Data.Migrations
                     b.Property<DateTime?>("EndedAt")
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("ended_at");
+
+                    b.Property<bool>("IsHidden")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_hidden");
 
                     b.Property<decimal?>("MaxDiscountAmount")
                         .HasPrecision(15, 2)
