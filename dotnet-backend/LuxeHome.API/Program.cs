@@ -21,7 +21,11 @@ AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 // Nạp GEMINI_API_KEY từ .env.local ở root repo (cùng file frontend đang dùng)
 TryLoadEnvLocal();
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    Args = args,
+    EnvironmentName = Environments.Production
+});
 
 static void TryLoadEnvLocal()
 {
@@ -60,7 +64,7 @@ var apiFolderPath = Path.Combine(Directory.GetCurrentDirectory(), "LuxeHome.API"
 var configBasePath = Directory.Exists(apiFolderPath) ? apiFolderPath : Directory.GetCurrentDirectory();
 
 builder.Configuration.SetBasePath(configBasePath)
-                     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
                      .AddEnvironmentVariables();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
