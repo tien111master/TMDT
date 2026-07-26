@@ -60,12 +60,9 @@ static void TryLoadEnvLocal()
     }
 }
 
-var apiFolderPath = Path.Combine(Directory.GetCurrentDirectory(), "LuxeHome.API");
-var configBasePath = Directory.Exists(apiFolderPath) ? apiFolderPath : Directory.GetCurrentDirectory();
-
-builder.Configuration.SetBasePath(configBasePath)
-                     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
-                     .AddEnvironmentVariables();
+builder.Configuration
+    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
+    .AddEnvironmentVariables();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
