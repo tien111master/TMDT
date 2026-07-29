@@ -9,10 +9,12 @@ using LuxeHome.Domain.Entities;
 public class ProductsController : ControllerBase
 {
     private readonly LuxeHomeDbContext _context;
+    private readonly LuxeHome.Infrastructure.Services.CloudinaryService _cloudinaryService;
 
-    public ProductsController(LuxeHomeDbContext context)
+    public ProductsController(LuxeHomeDbContext context, LuxeHome.Infrastructure.Services.CloudinaryService cloudinaryService)
     {
         _context = context;
+        _cloudinaryService = cloudinaryService;
     }
 
     [HttpGet]
@@ -359,6 +361,32 @@ public class ProductsController : ControllerBase
             await transaction.RollbackAsync();
             Console.WriteLine("UPDATE PRODUCT ERROR: " + ex.ToString());
             return StatusCode(500, new { message = "Lỗi server", detail = ex.InnerException?.Message ?? ex.Message });
+        }
+    }
+    [HttpPost("upload-image")]
+    public async Task<IActionResult> UploadImage(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest(new { message = "Không có file được gửi lên." });
+
+        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+        var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+        if (!allowedExtensions.Contains(ext))
+            return BadRequest(new { message = "Định dạng ảnh không hợp lệ. Chỉ chấp nhận jpg, jpeg, png, webp." });
+
+        if (file.Length > 5 * 1024 * 1024)
+            return BadRequest(new { message = "Ảnh không được vượt quá 5MB." });
+
+        try
+        {
+            using var stream = file.OpenReadStream();
+            var imageUrl = await _cloudinaryService.UploadImageAsync(stream, file.FileName);
+            return Ok(new { imageUrl });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("CLOUDINARY UPLOAD ERROR: " + ex.Message);
+            return StatusCode(500, new { message = "Tải ảnh lên thất bại.", detail = ex.Message });
         }
     }
 }
