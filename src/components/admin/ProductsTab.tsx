@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from "react";
 import { API_BASE_URL } from '../../api/api';
-import { Package, Search, Filter, Plus, X, Edit3, Trash2, ChevronLeft, ChevronRight, Image as ImageIcon, Globe, Check, DollarSign, Save } from "lucide-react";
+import { Package, Search, Filter, Plus, X, Edit3, Trash2, ChevronLeft, ChevronRight, Image as ImageIcon, Globe, Check, DollarSign, Save, Upload, Loader2 } from "lucide-react";
 import { Product } from "../../types";
 import { Category } from "../AdminPanel"; 
 
@@ -37,6 +36,7 @@ export default function ProductsTab({ categories, onUpdateProductStock, onAddPro
   const [newProdImage, setNewProdImage] = useState("");
   const [newProdMetaTitle, setNewProdMetaTitle] = useState("");
   const [newProdMetaDesc, setNewProdMetaDesc] = useState("");
+  const [isUploadingNewImage, setIsUploadingNewImage] = useState(false);
 
   // States Sửa sản phẩm
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -51,8 +51,60 @@ export default function ProductsTab({ categories, onUpdateProductStock, onAddPro
   const [editProdStatus, setEditProdStatus] = useState("ACTIVE");
   const [editProdMetaTitle, setEditProdMetaTitle] = useState("");
   const [editProdMetaDesc, setEditProdMetaDesc] = useState("");
+  const [isUploadingEditImage, setIsUploadingEditImage] = useState(false);
 
   const formattedPrice = (price: number) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(price);
+
+  // Upload ảnh lên server, trả về URL công khai (/uploads/products/xxx.jpg)
+  const uploadProductImage = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await fetch(`${API_BASE_URL}/api/products/upload-image`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => null);
+      throw new Error(errBody?.message || "Tải ảnh lên thất bại.");
+    }
+
+    const data = await res.json();
+    return data.imageUrl; // Cloudinary trả về URL đầy đủ, dùng thẳng
+  };
+
+  const handleNewImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingNewImage(true);
+    try {
+      const uploadedUrl = await uploadProductImage(file);
+      setNewProdImage(uploadedUrl);
+    } catch (err: any) {
+      alert(`Lỗi tải ảnh: ${err.message}`);
+    } finally {
+      setIsUploadingNewImage(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleEditImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingEditImage(true);
+    try {
+      const uploadedUrl = await uploadProductImage(file);
+      setEditProdImage(uploadedUrl);
+    } catch (err: any) {
+      alert(`Lỗi tải ảnh: ${err.message}`);
+    } finally {
+      setIsUploadingEditImage(false);
+      e.target.value = "";
+    }
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchTerm), 500);
@@ -263,10 +315,16 @@ export default function ProductsTab({ categories, onUpdateProductStock, onAddPro
               <input type="text" value={newProdMaterial} onChange={(e) => setNewProdMaterial(e.target.value)} className="w-full bg-white border border-[#EADBC8] p-2.5 rounded-xl focus:ring-1 focus:ring-[#D4AF37] focus:outline-none" />
             </div>
             <div className="md:col-span-1">
-              <label className="block text-[#1A1A1A] font-bold mb-1">URL Hình Ảnh</label>
-              <div className="relative">
-                <input type="text" value={newProdImage} onChange={(e) => setNewProdImage(e.target.value)} className="w-full bg-white border border-[#EADBC8] p-2.5 rounded-xl focus:ring-1 focus:ring-[#D4AF37] focus:outline-none pl-8" placeholder="https://..." />
-                <ImageIcon className="w-4 h-4 absolute left-2.5 top-3 text-gray-400" />
+              <label className="block text-[#1A1A1A] font-bold mb-1">Ảnh Sản Phẩm</label>
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 px-3 py-2.5 bg-white border border-[#EADBC8] rounded-xl cursor-pointer hover:bg-[#F4EBE1] transition-colors text-[#5C4033] font-bold flex-shrink-0">
+                  {isUploadingNewImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                  {isUploadingNewImage ? "Đang tải..." : "Chọn Ảnh"}
+                  <input type="file" accept="image/*" onChange={handleNewImageFileChange} disabled={isUploadingNewImage} className="hidden" />
+                </label>
+                {newProdImage && (
+                  <img src={newProdImage} alt="preview" className="w-10 h-10 rounded-lg object-cover border border-[#EADBC8] flex-shrink-0" />
+                )}
               </div>
             </div>
           </div>
@@ -285,7 +343,7 @@ export default function ProductsTab({ categories, onUpdateProductStock, onAddPro
             </div>
           </div>
 
-          <div className="flex justify-end pt-4 mt-2 border-t border-[#EADBC8]"><button type="submit" className="bg-[#D4AF37] text-white px-6 py-2.5 rounded-xl font-bold uppercase text-xs hover:bg-[#B8962E] flex items-center gap-1 cursor-pointer shadow-md"><Check className="w-4 h-4"/> Lưu Sản Phẩm Mới</button></div>
+          <div className="flex justify-end pt-4 mt-2 border-t border-[#EADBC8]"><button type="submit" disabled={isUploadingNewImage} className="bg-[#D4AF37] text-white px-6 py-2.5 rounded-xl font-bold uppercase text-xs hover:bg-[#B8962E] flex items-center gap-1 cursor-pointer shadow-md disabled:opacity-50 disabled:cursor-not-allowed"><Check className="w-4 h-4"/> Lưu Sản Phẩm Mới</button></div>
         </form>
       )}
 
@@ -374,8 +432,17 @@ export default function ProductsTab({ categories, onUpdateProductStock, onAddPro
                 <div className="md:col-span-2"><label className="block text-xs text-[#1A1A1A] uppercase font-bold mb-1">Tên Sản Phẩm *</label><input type="text" required value={editProdName} onChange={(e) => setEditProdName(e.target.value)} className="w-full border border-[#EADBC8] p-2.5 rounded-xl focus:ring-1 focus:ring-[#D4AF37] focus:outline-none" /></div>
                 <div><label className="block text-xs text-[#1A1A1A] uppercase font-bold mb-1">Đường Dẫn Tĩnh (Slug) *</label><input type="text" required value={editProdSlug} onChange={(e) => setEditProdSlug(e.target.value)} className="w-full border border-[#EADBC8] p-2.5 rounded-xl focus:ring-1 focus:ring-[#D4AF37] focus:outline-none bg-white" /></div>
                 <div>
-                  <label className="block text-xs text-[#1A1A1A] uppercase font-bold mb-1">URL Hình Ảnh Chính</label>
-                  <div className="relative"><input type="text" value={editProdImage} onChange={(e) => setEditProdImage(e.target.value)} className="w-full border border-[#EADBC8] p-2.5 rounded-xl focus:ring-1 focus:ring-[#D4AF37] focus:outline-none pl-8" /><ImageIcon className="w-4 h-4 absolute left-2.5 top-3 text-gray-400" /></div>
+                  <label className="block text-xs text-[#1A1A1A] uppercase font-bold mb-1">Ảnh Sản Phẩm</label>
+                  <div className="flex items-center gap-3">
+                    <label className="flex items-center gap-2 px-3 py-2.5 bg-white border border-[#EADBC8] rounded-xl cursor-pointer hover:bg-[#F4EBE1] transition-colors text-[#5C4033] font-bold flex-shrink-0 text-xs">
+                      {isUploadingEditImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                      {isUploadingEditImage ? "Đang tải..." : "Chọn Ảnh"}
+                      <input type="file" accept="image/*" onChange={handleEditImageFileChange} disabled={isUploadingEditImage} className="hidden" />
+                    </label>
+                    {editProdImage && (
+                      <img src={editProdImage} alt="preview" className="w-10 h-10 rounded-lg object-cover border border-[#EADBC8] flex-shrink-0" />
+                    )}
+                  </div>
                 </div>
                 <div>
                   <label className="block text-xs text-[#1A1A1A] uppercase font-bold mb-1">Trạng Thái Bán Hàng *</label>
@@ -407,7 +474,7 @@ export default function ProductsTab({ categories, onUpdateProductStock, onAddPro
               </div>
               <div className="pt-6 mt-6 flex justify-end gap-3 border-t border-[#EADBC8]">
                 <button type="button" onClick={() => setEditingProduct(null)} className="px-5 py-2.5 rounded-xl border border-[#EADBC8] text-gray-700 font-bold uppercase text-xs hover:bg-gray-100 transition-colors cursor-pointer">Hủy Bỏ</button>
-                <button type="submit" className="px-6 py-2.5 rounded-xl bg-[#5C4033] hover:bg-[#4A3B32] text-white font-bold uppercase text-xs flex items-center gap-2 shadow-lg transition-all transform hover:scale-105 cursor-pointer"><Save className="w-4 h-4 text-[#D4AF37]" /> Lưu Thay Đổi</button>
+                <button type="submit" disabled={isUploadingEditImage} className="px-6 py-2.5 rounded-xl bg-[#5C4033] hover:bg-[#4A3B32] text-white font-bold uppercase text-xs flex items-center gap-2 shadow-lg transition-all transform hover:scale-105 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"><Save className="w-4 h-4 text-[#D4AF37]" /> Lưu Thay Đổi</button>
               </div>
             </form>
           </div>

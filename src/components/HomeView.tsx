@@ -142,23 +142,26 @@ export default function HomeView({
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { id: "phong-khach", name: "Phòng Khách", count: "12 sản phẩm", image: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=300" },
-            { id: "phong-ngu", name: "Phòng Ngủ", count: "8 sản phẩm", image: "https://images.unsplash.com/photo-1540518614846-7eded433c457?auto=format&fit=crop&q=80&w=300" },
-            { id: "phong-an", name: "Phòng Ăn & Bếp", count: "15 sản phẩm", image: "https://images.unsplash.com/photo-1615066390971-03e4e1c36ddf?auto=format&fit=crop&q=80&w=300" },
-            { id: "van-phong", name: "Phòng Làm Việc", count: "6 sản phẩm", image: "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&q=80&w=300" }
-          ].map((r) => (
-            <div 
-              key={r.id}
-              onClick={() => onNavigateToCatalog({ category: r.id })}
-              className="relative aspect-square rounded-2xl overflow-hidden cursor-pointer group border border-[#EADBC8] shadow-inner"
-            >
-              <img src={r.image} alt={r.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4">
-                <h4 className="font-serif text-sm md:text-base font-bold text-white leading-tight">{r.name}</h4>
-                <p className="text-[10px] text-white/80 font-bold tracking-widest uppercase">{r.count}</p>
+            { id: "phong-khach", name: "Phòng Khách", image: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=300", slugs: ["noi-that-phong-khach", "ghe-sofa", "ban-tra", "ke-tivi"] },
+            { id: "phong-ngu", name: "Phòng Ngủ", image: "https://images.unsplash.com/photo-1540518614846-7eded433c457?auto=format&fit=crop&q=80&w=300", slugs: ["noi-that-phong-ngu", "giuong-ngu", "tu-quan-ao"] },
+            { id: "phong-an", name: "Phòng Ăn & Bếp", image: "https://images.unsplash.com/photo-1615066390971-03e4e1c36ddf?auto=format&fit=crop&q=80&w=300", slugs: ["noi-that-nha-bep", "ban-an", "ghe-an"] },
+            { id: "van-phong", name: "Phòng Làm Việc", image: "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&q=80&w=300", slugs: [] }
+          ].map((r) => {
+            const realCount = products.filter((p) => r.slugs.includes(p.category)).length;
+            return (
+              <div 
+                key={r.id}
+                onClick={() => onNavigateToCatalog({ category: r.id })}
+                className="relative aspect-square rounded-2xl overflow-hidden cursor-pointer group border border-[#EADBC8] shadow-inner"
+              >
+                <img src={r.image} alt={r.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4">
+                  <h4 className="font-serif text-sm md:text-base font-bold text-white leading-tight">{r.name}</h4>
+                  <p className="text-[10px] text-white/80 font-bold tracking-widest uppercase">{realCount} sản phẩm</p>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 
