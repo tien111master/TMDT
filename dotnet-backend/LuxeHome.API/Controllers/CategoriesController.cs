@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using LuxeHome.Infrastructure.Data;
 using LuxeHome.Application.DTOs;
 using LuxeHome.Domain.Entities;
@@ -8,19 +9,26 @@ using LuxeHome.Domain.Entities;
 [Route("api/[controller]")]
 public class CategoriesController : ControllerBase
 {
-    private readonly LuxeHomeDbContext _context; 
+    private readonly LuxeHomeDbContext _context;
+    private readonly IMemoryCache _cache;
+    private const string CacheKey = "categories_list";
 
-    public CategoriesController(LuxeHomeDbContext context)
+    public CategoriesController(LuxeHomeDbContext context, IMemoryCache cache)
     {
         _context = context;
+        _cache = cache;
     }
 
-    // Lấy danh sách danh mục 
+    // Lấy danh sách danh mục (có cache 5 phút)
     [HttpGet]
     public async Task<IActionResult> GetCategories()
     {
+        if (_cache.TryGetValue(CacheKey, out List<CategoryDto>? cached))
+        {
+            return Ok(cached);
+        }
+
         var categories = await _context.Categories
-            
             .OrderBy(c => c.SortOrder)
             .Select(c => new CategoryDto
             {
@@ -30,9 +38,11 @@ public class CategoriesController : ControllerBase
                 Slug = c.Slug,
                 ThumbnailUrl = c.ThumbnailUrl,
                 SortOrder = c.SortOrder,
-                IsVisible = c.IsVisible 
+                IsVisible = c.IsVisible
             })
             .ToListAsync();
+
+        _cache.Set(CacheKey, categories, TimeSpan.FromMinutes(5));
 
         return Ok(categories);
     }
@@ -45,12 +55,15 @@ public class CategoriesController : ControllerBase
         {
             CategoryName = dto.CategoryName,
             Slug = dto.Slug,
-            IsVisible = dto.IsVisible ?? true, 
+            IsVisible = dto.IsVisible ?? true,
             SortOrder = dto.SortOrder ?? 0
         };
 
         _context.Categories.Add(category);
         await _context.SaveChangesAsync();
+
+        _cache.Remove(CacheKey); // xóa cache cũ vì dữ liệu đã thay đổi
+
         return Ok(category);
     }
 
@@ -63,13 +76,16 @@ public class CategoriesController : ControllerBase
 
         category.CategoryName = dto.CategoryName;
         category.Slug = dto.Slug;
-        
-        if (dto.IsVisible.HasValue) 
+
+        if (dto.IsVisible.HasValue)
         {
             category.IsVisible = dto.IsVisible.Value;
         }
-        
+
         await _context.SaveChangesAsync();
+
+        _cache.Remove(CacheKey);
+
         return Ok(category);
     }
 
@@ -80,8 +96,11 @@ public class CategoriesController : ControllerBase
         var category = await _context.Categories.FindAsync(id);
         if (category == null) return NotFound();
 
-        category.IsVisible = false; // Xóa mềm
+        category.IsVisible = false;
         await _context.SaveChangesAsync();
+
+        _cache.Remove(CacheKey);
+
         return NoContent();
     }
 }

@@ -8,6 +8,7 @@ using System;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace LuxeHome.API.Controllers
 {
@@ -16,10 +17,14 @@ namespace LuxeHome.API.Controllers
     public class PromotionsController : ControllerBase
     {
         private readonly LuxeHomeDbContext _context;
+        private readonly IMemoryCache _cache;
+        private const string CouponsCacheKey = "promotions_coupons_list";
+        private const string AvailableCacheKey = "promotions_available_list";
 
-        public PromotionsController(LuxeHomeDbContext context)
+        public PromotionsController(LuxeHomeDbContext context, IMemoryCache cache)
         {
             _context = context;
+            _cache = cache;
         }
 
         // =========================================================================
@@ -28,6 +33,11 @@ namespace LuxeHome.API.Controllers
         [HttpGet]
         public async Task<IActionResult> GetCoupons()
         {
+            if (_cache.TryGetValue(CouponsCacheKey, out object? cached))
+            {
+                return Ok(cached);
+            }
+
             var now = DateTime.Now;
 
             var promotions = await _context.Promotions
@@ -55,6 +65,8 @@ namespace LuxeHome.API.Controllers
                 })
                 .ToListAsync();
 
+            _cache.Set(CouponsCacheKey, promotions, TimeSpan.FromMinutes(5));
+
             return Ok(promotions);
         }
 
@@ -62,6 +74,11 @@ namespace LuxeHome.API.Controllers
         [HttpGet("available")]
         public async Task<IActionResult> GetAvailablePromotions()
         {
+            if (_cache.TryGetValue(AvailableCacheKey, out object? cached))
+            {
+                return Ok(cached);
+            }
+
             var now = DateTime.Now;
 
             var promotions = await _context.Promotions
@@ -86,6 +103,8 @@ namespace LuxeHome.API.Controllers
                     p.MaxDiscountAmount
                 })
                 .ToListAsync();
+
+            _cache.Set(AvailableCacheKey, promotions, TimeSpan.FromMinutes(5));
 
             return Ok(promotions);
         }
@@ -148,6 +167,8 @@ namespace LuxeHome.API.Controllers
             _context.Promotions.Add(promotion);
             await _context.SaveChangesAsync();
 
+            ClearPromotionsCache();
+
             return Ok(new { message = "Đã tạo và kích hoạt chương trình khuyến mãi theo lịch.", id = promotion.Id });
         }
 
@@ -179,6 +200,8 @@ namespace LuxeHome.API.Controllers
 
             await _context.SaveChangesAsync();
 
+            ClearPromotionsCache();
+
             return Ok(new { message = "Đã cập nhật chương trình khuyến mãi thành công." });
         }
 
@@ -196,6 +219,8 @@ namespace LuxeHome.API.Controllers
 
             await _context.SaveChangesAsync();
 
+            ClearPromotionsCache();
+
             return Ok(new { message = "Đã kết thúc/hủy chương trình khuyến mãi.", status = "Ended" });
         }
 
@@ -208,11 +233,19 @@ namespace LuxeHome.API.Controllers
             promotion.IsHidden = dto.IsHidden;
             await _context.SaveChangesAsync();
 
+            ClearPromotionsCache();
+
             return Ok(new
             {
                 message = dto.IsHidden ? "Đã ẩn mã giảm giá." : "Đã hiện lại mã giảm giá.",
                 isHidden = promotion.IsHidden
             });
+        }
+
+        private void ClearPromotionsCache()
+        {
+            _cache.Remove(CouponsCacheKey);
+            _cache.Remove(AvailableCacheKey);
         }
 
         private async Task<string?> ValidatePromotionAsync(

@@ -147,6 +147,7 @@ builder.Services.AddScoped<ChatUseCase>();
 builder.Services.AddScoped<ImageSearchUseCase>();
 builder.Services.AddScoped<UserUseCase>();
 builder.Services.AddScoped<VnPayService>();
+builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<LuxeHome.Infrastructure.Services.CloudinaryService>();
 builder.Services.AddScoped<InventoryService>();
 builder.Services.AddScoped<OrderService>();

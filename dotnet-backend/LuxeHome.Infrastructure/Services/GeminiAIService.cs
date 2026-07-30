@@ -49,6 +49,8 @@ namespace LuxeHome.Infrastructure.Services
             return string.IsNullOrEmpty(_apiKey);
         }
 
+        // Lưu ý: chat text hiện KHÔNG còn dùng hàm này nữa (ChatUseCase xử lý trực tiếp bằng DB).
+        // Hàm này vẫn giữ lại phòng khi cần dùng lại Gemini cho việc khác trong tương lai.
         public async Task<string> GenerateChatAsync(List<Message> messages, string systemInstruction)
         {
             if (IsOffline())
@@ -59,8 +61,7 @@ namespace LuxeHome.Infrastructure.Services
             try
             {
                 var url = $"{GenerateUrl}?key={_apiKey}";
-                
-                // Ghép nội dung lịch sử tin nhắn
+
                 var chatBuilder = new StringBuilder();
                 foreach (var msg in messages)
                 {
@@ -69,7 +70,6 @@ namespace LuxeHome.Infrastructure.Services
                 }
                 chatBuilder.AppendLine("LuxeHome Assistant:");
 
-                // Biểu diễn payload JSON theo chuẩn Google Gen AI API
                 var payload = new
                 {
                     contents = new[]
@@ -100,8 +100,7 @@ namespace LuxeHome.Infrastructure.Services
 
                 var jsonString = await response.Content.ReadAsStringAsync();
                 using var doc = JsonDocument.Parse(jsonString);
-                
-                // Giải mã lấy kết quả text từ cấu trúc phản hồi của Gemini
+
                 if (doc.RootElement.TryGetProperty("candidates", out var candidates) &&
                     candidates.GetArrayLength() > 0 &&
                     candidates[0].TryGetProperty("content", out var resContent) &&
@@ -123,7 +122,6 @@ namespace LuxeHome.Infrastructure.Services
 
         public async Task<ImageSearchResult> AnalyzeImageAsync(string imageBase64, string mimeType, string instruction)
         {
-            // Trả về sản phẩm tương đồng giả định nếu ngoại tuyến
             if (IsOffline())
             {
                 return new ImageSearchResult
@@ -139,8 +137,7 @@ namespace LuxeHome.Infrastructure.Services
             try
             {
                 var url = $"{GenerateUrl}?key={_apiKey}";
-                
-                // Tách lọc tiền tố base64 data:xxx/yyy;base64,
+
                 string cleanBase64 = imageBase64;
                 if (imageBase64.Contains(","))
                 {
@@ -151,12 +148,12 @@ namespace LuxeHome.Infrastructure.Services
                 {
                     contents = new[]
                     {
-                        new { 
-                            parts = new object[] 
-                            { 
+                        new {
+                            parts = new object[]
+                            {
                                 new { text = instruction },
                                 new { inlineData = new { mimeType = mimeType, data = cleanBase64 } }
-                            } 
+                            }
                         }
                     },
                     generationConfig = new
@@ -182,9 +179,9 @@ namespace LuxeHome.Infrastructure.Services
                         parts[0].TryGetProperty("text", out var textVal))
                     {
                         var innerJson = textVal.GetString() ?? "{}";
-                        var result = JsonSerializer.Deserialize<ImageSearchResult>(innerJson, new JsonSerializerOptions 
-                        { 
-                            PropertyNameCaseInsensitive = true 
+                        var result = JsonSerializer.Deserialize<ImageSearchResult>(innerJson, new JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true
                         });
                         return result ?? new ImageSearchResult();
                     }

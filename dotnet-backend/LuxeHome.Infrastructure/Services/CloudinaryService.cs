@@ -13,9 +13,19 @@ namespace LuxeHome.Infrastructure.Services
 
         public CloudinaryService(IConfiguration configuration)
         {
-            var cloudName = FirstNonEmpty(configuration["Cloudinary:CloudName"], Environment.GetEnvironmentVariable("CLOUDINARY_CLOUD_NAME"));
-            var apiKey = FirstNonEmpty(configuration["Cloudinary:ApiKey"], Environment.GetEnvironmentVariable("CLOUDINARY_API_KEY"));
-            var apiSecret = FirstNonEmpty(configuration["Cloudinary:ApiSecret"], Environment.GetEnvironmentVariable("CLOUDINARY_API_SECRET"));
+            // Lưu ý: tên section phải khớp với appsettings.json là "CloudinarySettings"
+            // (trước đây code đọc nhầm "Cloudinary" -> luôn rỗng -> crash lúc khởi tạo).
+            var cloudName = FirstNonEmpty(configuration["CloudinarySettings:CloudName"], Environment.GetEnvironmentVariable("CLOUDINARY_CLOUD_NAME"));
+            var apiKey = FirstNonEmpty(configuration["CloudinarySettings:ApiKey"], Environment.GetEnvironmentVariable("CLOUDINARY_API_KEY"));
+            var apiSecret = FirstNonEmpty(configuration["CloudinarySettings:ApiSecret"], Environment.GetEnvironmentVariable("CLOUDINARY_API_SECRET"));
+
+            if (string.IsNullOrWhiteSpace(cloudName) || string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(apiSecret))
+            {
+                throw new InvalidOperationException(
+                    "Thiếu cấu hình Cloudinary (CloudName/ApiKey/ApiSecret). " +
+                    "Kiểm tra appsettings.json mục 'CloudinarySettings' hoặc biến môi trường " +
+                    "CLOUDINARY_CLOUD_NAME / CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET.");
+            }
 
             var account = new Account(cloudName, apiKey, apiSecret);
             _cloudinary = new Cloudinary(account);
