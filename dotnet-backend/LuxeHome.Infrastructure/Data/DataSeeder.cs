@@ -330,9 +330,37 @@ namespace LuxeHome.Infrastructure.Data
             return newCategory;
         }
 
+        // Chuyển chuỗi tiếng Việt có dấu -> slug chuẩn không dấu, chỉ gồm a-z, 0-9, dấu gạch ngang.
+        // VD: "Phòng Khách" -> "phong-khach", "Bàn Ăn Gỗ 1m6 SERENA" -> "ban-an-go-1m6-serena"
         private static string ToSlug(string text)
         {
-            return text.ToLower().Replace("đ", "d").Replace(" ", "-");
+            if (string.IsNullOrWhiteSpace(text)) return string.Empty;
+
+            string result = text.ToLowerInvariant().Trim();
+
+            // Xử lý riêng chữ "đ"/"Đ" vì Unicode NFD không tách được ký tự này thành "d" + dấu
+            result = result.Replace("đ", "d");
+
+            // Tách chữ có dấu thành chữ gốc + dấu riêng (Unicode Normalization Form D),
+            // sau đó loại bỏ toàn bộ ký tự thuộc nhóm dấu (NonSpacingMark)
+            result = result.Normalize(System.Text.NormalizationForm.FormD);
+            var sb = new System.Text.StringBuilder();
+            foreach (var c in result)
+            {
+                var category = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c);
+                if (category != System.Globalization.UnicodeCategory.NonSpacingMark)
+                {
+                    sb.Append(c);
+                }
+            }
+            result = sb.ToString().Normalize(System.Text.NormalizationForm.FormC);
+
+            // Thay mọi ký tự không phải chữ/số bằng "-", gộp nhiều "-" liên tiếp thành 1, cắt "-" ở đầu/cuối
+            result = System.Text.RegularExpressions.Regex.Replace(result, @"[^a-z0-9]+", "-");
+            result = System.Text.RegularExpressions.Regex.Replace(result, @"-+", "-");
+            result = result.Trim('-');
+
+            return result;
         }
 
         private record RoomProductSeed(string ProductCode, string Name, string Description, string Material, decimal Price, string[] Colors);

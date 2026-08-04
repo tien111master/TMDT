@@ -5,6 +5,7 @@
 
 import React, { lazy, Suspense, useCallback, useState } from "react";
 import { API_BASE_URL } from './api/api';
+import { generateSlug } from './utils/slug';
 import Navbar from "./components/Navbar";
 import HomeView from "./components/HomeView";
 import CatalogView from "./components/CatalogView";
@@ -144,7 +145,14 @@ export default function App() {
   const CART_STORAGE_KEY = "luxehome_cart";
   // Navigation States
   const [activeTab, setActiveTab] = useState<string>("home");
-  const [catalogFilters, setCatalogFilters] = useState<{ category?: string; style?: string }>({});
+  const [catalogFilters, setCatalogFilters] = useState<{
+    category?: string;
+    style?: string;
+    color?: string;
+    maxPrice?: number;
+    sortBy?: string;
+    search?: string;
+  }>({});
 
   // Core App State (With reactive local data syncs)
   const [products, setProducts] = useState<Product[]>([]);
@@ -351,9 +359,22 @@ const savedRole = sessionStorage.getItem("user_role");
 
   return mappedProducts.filter((p: any) => p.status !== "INACTIVE");
 }, []);
-  const fetchCatalogProducts = useCallback((page: number) => {
+  const fetchCatalogProducts = useCallback((page: number, filtersOverride?: typeof catalogFilters) => {
+    const f = filtersOverride ?? catalogFilters;
     setIsCatalogLoading(true);
-    fetch(`${API_BASE_URL}/api/products?page=${page}&pageSize=${PRODUCT_PAGE_SIZE}`)
+
+    const params = new URLSearchParams({
+      page: String(page),
+      pageSize: String(PRODUCT_PAGE_SIZE),
+    });
+    if (f.category) params.set("category", f.category);
+    if (f.style) params.set("style", f.style);
+    if (f.color) params.set("color", f.color);
+    if (f.maxPrice) params.set("maxPrice", String(f.maxPrice));
+    if (f.sortBy) params.set("sortBy", f.sortBy);
+    if (f.search) params.set("search", f.search);
+
+    fetch(`${API_BASE_URL}/api/products?${params.toString()}`)
       .then(res => {
         if (!res.ok) throw new Error("Cổng API Backend từ chối kết nối");
         return res.json();
@@ -387,7 +408,7 @@ const savedRole = sessionStorage.getItem("user_role");
         setProducts([]);
       })
       .finally(() => setIsCatalogLoading(false));
-  }, [PRODUCT_PAGE_SIZE, mapBackendProductsToFrontend]);
+  }, [PRODUCT_PAGE_SIZE, mapBackendProductsToFrontend, catalogFilters]);
 
   useEffect(() => {
     fetchCatalogProducts(1);
@@ -405,10 +426,24 @@ const savedRole = sessionStorage.getItem("user_role");
   const [comparedProductIds, setComparedProductIds] = useState<string[]>([]);
 
   const handleNavigateToCatalogWithFilters = (filters: { category?: string; style?: string }) => {
-    setCatalogFilters(filters);
+    const merged = { ...filters };
+    setCatalogFilters(merged);
     setCatalogCurrentPage(1);
-    fetchCatalogProducts(1);
+    fetchCatalogProducts(1, merged);
     setActiveTab("catalog");
+  };
+
+  const handleCatalogFilterChange = (partial: Partial<typeof catalogFilters>) => {
+    const merged = { ...catalogFilters, ...partial };
+    setCatalogFilters(merged);
+    setCatalogCurrentPage(1);
+    fetchCatalogProducts(1, merged);
+  };
+
+  const handleClearCatalogFilters = () => {
+    setCatalogFilters({});
+    setCatalogCurrentPage(1);
+    fetchCatalogProducts(1, {});
   };
 
   const handleCloseAuth = useCallback(() => setIsAuthOpen(false), []);
@@ -636,7 +671,6 @@ const savedRole = sessionStorage.getItem("user_role");
 
   const handleAddProductToInventory = async (newProd: Product) => {
     try {
-      const generateSlug = (text: string) => text.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
       const payload = {
         productName: newProd.name,
         slug: generateSlug(newProd.name),
@@ -844,8 +878,19 @@ const handleUpdateProductStock = async (productId: string, newStock: number) => 
             isLoading={isCatalogLoading}
             onPageChange={(page) => fetchCatalogProducts(page)}
             onSelectProduct={(p) => setSelectedProductForDetail(p)}
-            initialCategory={catalogFilters.category}
-            initialStyle={catalogFilters.style}
+            selectedCategory={catalogFilters.category || ""}
+            selectedStyle={catalogFilters.style || ""}
+            selectedColor={catalogFilters.color || ""}
+            maxPrice={catalogFilters.maxPrice ?? 75000000}
+            sortBy={catalogFilters.sortBy || "rating"}
+            searchQuery={catalogFilters.search || ""}
+            onCategoryChange={(v) => handleCatalogFilterChange({ category: v })}
+            onStyleChange={(v) => handleCatalogFilterChange({ style: v })}
+            onColorChange={(v) => handleCatalogFilterChange({ color: v })}
+            onMaxPriceChange={(v) => handleCatalogFilterChange({ maxPrice: v })}
+            onSortByChange={(v) => handleCatalogFilterChange({ sortBy: v })}
+            onSearchChange={(v) => handleCatalogFilterChange({ search: v })}
+            onClearFilters={handleClearCatalogFilters}
           />
         )}
 

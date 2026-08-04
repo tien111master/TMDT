@@ -22,12 +22,17 @@ public class ProductsController : ControllerBase
         [FromQuery] int page = 1, 
         [FromQuery] int pageSize = 10, 
         [FromQuery] string search = "", 
-        [FromQuery] string category = "")
+        [FromQuery] string category = "",
+        [FromQuery] string style = "",
+        [FromQuery] string color = "",
+        [FromQuery] decimal? maxPrice = null,
+        [FromQuery] string sortBy = "rating")
     {
         var query = _context.Products
             .Include(p => p.Category)
             .Include(p => p.ProductImages)
             .Include(p => p.ProductVariants)
+            .Where(p => p.Status != "INACTIVE")
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(search))
@@ -41,11 +46,34 @@ public class ProductsController : ControllerBase
             query = query.Where(p => p.Category != null && p.Category.Slug == category);
         }
 
+        if (!string.IsNullOrEmpty(style) && style != "all")
+        {
+            query = query.Where(p => p.Style == style);
+        }
+
+        if (!string.IsNullOrEmpty(color) && color != "all")
+        {
+            query = query.Where(p => p.ProductVariants.Any(v => v.Color == color));
+        }
+
+        if (maxPrice.HasValue)
+        {
+            query = query.Where(p => p.ProductVariants.Any()
+                && p.ProductVariants.Min(v => v.CurrentPrice) <= maxPrice.Value);
+        }
+
         int totalItems = await query.CountAsync();
         int totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
 
+        query = sortBy switch
+        {
+            "price-asc" => query.OrderBy(p => p.ProductVariants.Any() ? p.ProductVariants.Min(v => v.CurrentPrice) : decimal.MaxValue),
+            "price-desc" => query.OrderByDescending(p => p.ProductVariants.Any() ? p.ProductVariants.Min(v => v.CurrentPrice) : 0),
+            "name" => query.OrderBy(p => p.ProductName),
+            _ => query.OrderByDescending(p => p.AverageRating).ThenByDescending(p => p.Id)
+        };
+
         var products = await query
-            .OrderByDescending(p => p.Id)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Select(p => new ProductResponseDto

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { API_BASE_URL } from '../../api/api';
 import { Package, Search, Filter, Plus, X, Edit3, Trash2, ChevronLeft, ChevronRight, Image as ImageIcon, Globe, Check, DollarSign, Save, Upload, Loader2 } from "lucide-react";
 import { Product } from "../../types";
-import { Category } from "../AdminPanel"; 
+import { Category } from "../AdminPanel";
+import { generateSlug } from "../../utils/slug"; 
 
 interface ProductsTabProps {
   categories: Category[];
@@ -151,7 +152,7 @@ export default function ProductsTab({ categories, onUpdateProductStock, onAddPro
 
   useEffect(() => {
     if (isAddingProduct) {
-      setNewProdSlug(newProdName.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, ''));
+      setNewProdSlug(generateSlug(newProdName));
       setNewProdMetaTitle(newProdName);
     }
   }, [newProdName, isAddingProduct]);
@@ -191,7 +192,7 @@ export default function ProductsTab({ categories, onUpdateProductStock, onAddPro
   const openEditProductModal = (product: Product) => {
     setEditingProduct(product);
     setEditProdName(product.name);
-    setEditProdSlug((product as any).slug || product.name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, ''));
+    setEditProdSlug((product as any).slug || generateSlug(product.name));
     setEditProdPrice(product.price);
     setEditProdCategory(product.category);
     setEditProdStyle(product.style || "Modern");

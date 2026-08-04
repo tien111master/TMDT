@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from "react";
-import { Search, Filter, SlidersHorizontal, Trash2, ArrowUpDown, Star, FileText, Check, AlertCircle, Scale, Eye, ChevronDown } from "lucide-react";
+import React, { useState, useMemo, useEffect } from "react";
+import { Search, SlidersHorizontal, Trash2, ArrowUpDown, Star, Check, AlertCircle, Scale, Eye, ChevronDown } from "lucide-react";
 import { Product } from "../types";
 
 interface CatalogViewProps {
@@ -10,8 +10,24 @@ interface CatalogViewProps {
   isLoading: boolean;
   onPageChange: (page: number) => void;
   onSelectProduct: (product: Product) => void;
-  initialCategory?: string;
-  initialStyle?: string;
+
+  // Filter state giờ được điều khiển hoàn toàn từ component cha (App.tsx),
+  // vì việc lọc/sắp xếp/phân trang phải chạy trên SERVER (toàn bộ dữ liệu),
+  // không thể tự lọc lại trên "products" ở đây (chỉ là 1 trang đã phân trang sẵn).
+  selectedCategory: string;
+  selectedStyle: string;
+  selectedColor: string;
+  maxPrice: number;
+  sortBy: string;
+  searchQuery: string;
+
+  onCategoryChange: (value: string) => void;
+  onStyleChange: (value: string) => void;
+  onColorChange: (value: string) => void;
+  onMaxPriceChange: (value: number) => void;
+  onSortByChange: (value: string) => void;
+  onSearchChange: (value: string) => void;
+  onClearFilters: () => void;
 }
 
 export default function CatalogView({
@@ -22,62 +38,50 @@ export default function CatalogView({
   isLoading,
   onPageChange,
   onSelectProduct,
-  initialCategory = "",
-  initialStyle = "",
+  selectedCategory,
+  selectedStyle,
+  selectedColor,
+  maxPrice,
+  sortBy,
+  searchQuery,
+  onCategoryChange,
+  onStyleChange,
+  onColorChange,
+  onMaxPriceChange,
+  onSortByChange,
+  onSearchChange,
+  onClearFilters,
 }: CatalogViewProps) {
   const selectBaseClass =
     "w-full text-xs bg-white border border-[#EADBC8] rounded-lg text-[#1A1A1A] appearance-none pr-8 transition-colors focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/30 focus:border-[#D4AF37]";
 
-  // Filters State
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
-  const [selectedStyle, setSelectedStyle] = useState(initialStyle);
-  const [selectedColor, setSelectedColor] = useState("");
-  const [maxPrice, setMaxPrice] = useState<number>(75000000);
-  const [sortBy, setSortBy] = useState<string>("rating"); // rating, price-asc, price-desc, name
+  // Ô tìm kiếm gõ tự do nên debounce 400ms trước khi gọi API,
+  // tránh gọi lại server liên tục theo từng ký tự gõ.
+  const [searchInput, setSearchInput] = useState(searchQuery);
+  useEffect(() => {
+    setSearchInput(searchQuery);
+  }, [searchQuery]);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchInput !== searchQuery) onSearchChange(searchInput);
+    }, 400);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchInput]);
 
-  // Comparison State
+  // Comparison State (chức năng so sánh sản phẩm, không liên quan bộ lọc)
   const [comparedProducts, setComparedProducts] = useState<Product[]>([]);
   const [isCompareViewActive, setIsCompareViewActive] = useState(false);
 
-  // Extract master lists for options
+  // Danh sách màu để hiển thị trong sidebar — LƯU Ý: chỉ lấy được từ các sản phẩm
+  // đang có trong trang hiện tại (server không có endpoint riêng liệt kê toàn bộ màu).
+  // Nếu cần đầy đủ màu của toàn bộ 30 sản phẩm, cần thêm 1 endpoint GET /api/products/colors.
   const colorOptions = useMemo(() => {
     const colors = new Set<string>();
     products.forEach((p) => p.colors.forEach((c) => colors.add(c)));
     return Array.from(colors);
   }, [products]);
 
-
-  // Handle filter logic
-  const filteredProducts = useMemo(() => {
-    return products
-      .filter((p) => {
-        const matchesSearch =
-          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.brand.toLowerCase().includes(searchQuery.toLowerCase());
-
-        const matchesCategory = selectedCategory ? p.category === selectedCategory : true;
-        const matchesStyle = selectedStyle ? p.style === selectedStyle : true;
-        
-        const matchesColor = selectedColor
-          ? p.colors.some((c) => c.toLowerCase().includes(selectedColor.toLowerCase()))
-          : true;
-
-        const matchesPrice = p.price <= maxPrice;
-
-        return matchesSearch && matchesCategory && matchesStyle && matchesColor && matchesPrice;
-      })
-      .sort((a, b) => {
-        if (sortBy === "rating") return b.rating - a.rating;
-        if (sortBy === "price-asc") return a.price - b.price;
-        if (sortBy === "price-desc") return b.price - a.price;
-        if (sortBy === "name") return a.name.localeCompare(b.name);
-        return 0;
-      });
-  }, [products, searchQuery, selectedCategory, selectedStyle, selectedColor, maxPrice, sortBy]);
-
-  // Manage comparative lists
   const toggleCompare = (prod: Product) => {
     if (comparedProducts.some((p) => p.id === prod.id)) {
       setComparedProducts(comparedProducts.filter((p) => p.id !== prod.id));
@@ -91,12 +95,8 @@ export default function CatalogView({
   };
 
   const handleClearAllFilters = () => {
-    setSearchQuery("");
-    setSelectedCategory("");
-    setSelectedStyle("");
-    setSelectedColor("");
-    setMaxPrice(75000000);
-    setSortBy("rating");
+    setSearchInput("");
+    onClearFilters();
   };
 
   const formattedPrice = (price: number) => {
@@ -138,7 +138,7 @@ export default function CatalogView({
             Trưng Bày Tác Phẩm LuxeHome
           </h1>
           <p className="text-xs text-[#8B7E74]">
-            Hiển thị {filteredProducts.length} sản phẩm trang {currentPage}/{totalPages} • Tổng {totalItems} sản phẩm
+            Hiển thị {products.length} sản phẩm trang {currentPage}/{Math.max(totalPages, 1)} • Tổng {totalItems} sản phẩm
           </p>
         </div>
 
@@ -150,8 +150,8 @@ export default function CatalogView({
           <input
             type="text"
             placeholder="Tìm Sofa, Bàn làm việc, Nhung..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="w-full text-xs bg-[#FAF6F0] text-[#1A1A1A] border border-[#EADBC8] pl-9 pr-4 py-2.5 rounded-full focus:outline-none focus:ring-1 focus:ring-[#D4AF37] placeholder-[#8B7E74]/70"
             id="catalog-search-textbox"
           />
@@ -189,7 +189,7 @@ export default function CatalogView({
             ].map((cat) => (
               <button
                 key={cat.id}
-                onClick={() => setSelectedCategory(cat.id)}
+                onClick={() => onCategoryChange(cat.id)}
                 className={`w-full text-left text-xs px-3 py-1.5 rounded-lg transition-colors flex items-center justify-between font-medium ${
                   selectedCategory === cat.id
                     ? "bg-[#5C4033] text-white shadow-sm"
@@ -208,7 +208,7 @@ export default function CatalogView({
             <div className="relative">
               <select
                 value={selectedStyle}
-                onChange={(e) => setSelectedStyle(e.target.value)}
+                onChange={(e) => onStyleChange(e.target.value)}
                 className={`${selectBaseClass} p-2.5`}
               >
                 <option value="">Tất cả phong cách</option>
@@ -233,7 +233,7 @@ export default function CatalogView({
               max="75000000"
               step="5000000"
               value={maxPrice}
-              onChange={(e) => setMaxPrice(Number(e.target.value))}
+              onChange={(e) => onMaxPriceChange(Number(e.target.value))}
               className="w-full accent-[#5C4033]"
             />
             <div className="flex justify-between text-[9px] text-[#8B7E74] font-semibold">
@@ -242,13 +242,12 @@ export default function CatalogView({
             </div>
           </div>
 
-
           {/* Colors palette criteria */}
           <div className="space-y-2">
             <h3 className="text-xs font-semibold text-[#5C4033] uppercase tracking-wider mb-2">Sắc diện mộc màu:</h3>
             <div className="flex flex-wrap gap-1.5">
               <button
-                onClick={() => setSelectedColor("")}
+                onClick={() => onColorChange("")}
                 className={`text-[10px] px-2 py-0.5 rounded border ${
                   selectedColor === ""
                     ? "border-[#D4AF37] bg-[#D4AF37]/10 font-bold"
@@ -260,7 +259,7 @@ export default function CatalogView({
               {colorOptions.map((col) => (
                 <button
                   key={col}
-                  onClick={() => setSelectedColor(col)}
+                  onClick={() => onColorChange(col)}
                   className={`text-[10px] px-2 py-0.5 rounded border transition-colors ${
                     selectedColor === col
                       ? "border-[#5C4033] bg-[#5C4033] text-white font-semibold"
@@ -289,7 +288,7 @@ export default function CatalogView({
               <div className="relative min-w-[180px]">
                 <select
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
+                  onChange={(e) => onSortByChange(e.target.value)}
                   className={`${selectBaseClass} p-1.5`}
                 >
                   <option value="rating">Được đánh giá cao</option>
@@ -302,14 +301,14 @@ export default function CatalogView({
             </div>
           </div>
 
-          {/* Products List Grid */}
+          {/* Products List Grid — dùng thẳng "products" từ server, KHÔNG lọc lại ở đây */}
           {isLoading ? (
             <div className="p-12 text-center bg-[#FAF6F0] rounded-2xl border border-dashed border-[#EADBC8]">
               <h3 className="font-serif text-base font-bold text-[#1A1A1A]">Đang tải sản phẩm...</h3>
             </div>
-          ) : filteredProducts.length > 0 ? (
+          ) : products.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="catalog-products-list-grid">
-              {filteredProducts.map((p) => {
+              {products.map((p) => {
                 const isCompared = comparedProducts.some((cp) => cp.id === p.id);
                 return (
                   <div
@@ -319,7 +318,6 @@ export default function CatalogView({
                     <div className="relative aspect-square bg-[#FAF6F0] overflow-hidden group">
                       <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                       
-                      {/* Similar hovering button triggers detail */}
                       <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-3 transition-opacity">
                         <button
                           onClick={() => onSelectProduct(p)}
@@ -328,7 +326,6 @@ export default function CatalogView({
                         >
                           <Eye className="w-4 h-4" />
                         </button>
-                        
 
                         <button
                           onClick={() => toggleCompare(p)}
@@ -421,7 +418,7 @@ export default function CatalogView({
         </main>
       </div>
 
-      {/* 4. Comparing Tray popup overlay (Chức năng so sánh sản phẩm) */}
+      {/* 4. Comparing Tray popup overlay */}
       {comparedProducts.length > 0 && (
         <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t-2 border-[#D4AF37] p-4 shadow-[0_-10px_30px_rgba(0,0,0,0.15)] animate-slide-up" id="comparison-tray">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
@@ -436,7 +433,6 @@ export default function CatalogView({
               </div>
             </div>
 
-            {/* List of matched options in compare bar */}
             <div className="flex gap-4">
               {comparedProducts.map((p) => (
                 <div key={p.id} className="relative flex items-center gap-2.5 bg-[#FAF6F0] p-2.5 rounded-lg border border-[#EADBC8]">
@@ -491,7 +487,6 @@ export default function CatalogView({
             </h2>
 
             <div className="grid grid-cols-4 gap-4 text-xs font-semibold" id="compare-matrix">
-              {/* Properties row headers */}
               <div className="space-y-4 font-bold text-[#8B7E74] text-right pr-4 border-r border-[#EADBC8] pt-32">
                 <div className="h-10">Mức đầu tư</div>
                 <div className="h-10">Dòng Phân Loại</div>
@@ -501,7 +496,6 @@ export default function CatalogView({
                 <div className="h-10">Chế Độ Bảo Hành</div>
               </div>
 
-              {/* Items columns */}
               {comparedProducts.map((p) => (
                 <div key={p.id} className="text-center space-y-4">
                   <div className="flex flex-col items-center">
@@ -519,7 +513,6 @@ export default function CatalogView({
                 </div>
               ))}
 
-              {/* Add dummy columns to keep layout aligned */}
               {Array.from({ length: 3 - comparedProducts.length }).map((_, i) => (
                 <div key={i} className="border-2 border-dashed border-[#EADBC8]/60 rounded-xl flex items-center justify-center h-full bg-[#EADBC8]/10 text-[#8B7E74]">
                   Trống
