@@ -142,6 +142,7 @@ builder.Services.AddAuthentication(options =>
     };
 });
 builder.Services.AddHttpClient<IAIService, GeminiAIService>();
+builder.Services.AddHttpClient<IRagChatService, OpenAIRagService>();
 
 builder.Services.AddScoped<ChatUseCase>();
 builder.Services.AddScoped<ImageSearchUseCase>();
@@ -247,6 +248,7 @@ using (var scope = app.Services.CreateScope())
         var configuration = services.GetRequiredService<IConfiguration>();
         bool enableSeeding = configuration.GetValue<bool>("SeedDataConfig:EnableSeeding");
         await DataSeeder.SeedAsync(context, enableSeeding);
+        await DataSeeder.SeedRoomProductsAsync(context); // Luôn chạy, tự kiểm tra trùng theo ProductCode
     }
     catch (Exception ex)
     {

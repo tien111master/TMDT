@@ -172,5 +172,169 @@ namespace LuxeHome.Infrastructure.Data
         await context.ProductImages.AddRangeAsync(images);
         await context.SaveChangesAsync();
         }
+
+        // ==========================================
+        // SEED SẢN PHẨM THEO PHÒNG (5 sản phẩm/phòng, kèm màu sắc)
+        // Luôn chạy, tự kiểm tra trùng theo ProductCode -> chạy lại bao nhiêu lần cũng an toàn.
+        // ==========================================
+        public static async Task SeedRoomProductsAsync(LuxeHomeDbContext context)
+        {
+            var roomProductGroups = new List<(string RoomCategoryName, List<RoomProductSeed> Products)>
+            {
+                ("Phòng Ngủ", new List<RoomProductSeed>
+                {
+                    new RoomProductSeed("BEDROOM-001", "Combo Giường 1m8 & Tủ đầu giường ASTRO - Màu Tự Nhiên",
+                        "Combo giường 1m8 và tủ đầu giường ASTRO thiết kế tối giản, khung gỗ cao su tự nhiên, đầu giường bọc nệm D50 êm ái.",
+                        "Gỗ cao su tự nhiên, MDF/MFC & Plywood chuẩn CARB-P2", 15500000, new[] { "Mặc định" }),
+                    new RoomProductSeed("BEDROOM-002", "Combo Phòng Ngủ SCARLET - MOHO Signature",
+                        "Thiết kế Ý đương đại, gỗ Ash tự nhiên, vải bọc cao cấp nhập khẩu, đồng bộ giường - tủ quần áo - tủ đầu giường.",
+                        "Gỗ Ash tự nhiên, vải bọc cao cấp chuẩn CARB-P2", 32900000, new[] { "Xám" }),
+                    new RoomProductSeed("BEDROOM-003", "Combo Tủ Quần Áo VLINE V3",
+                        "Giải pháp lưu trữ toàn diện: treo - gấp - trưng bày - ngăn kéo, phù hợp phòng ngủ gia đình 12-20m².",
+                        "Gỗ công nghiệp MFC/MDF phủ melamine chuẩn CARB-P2", 8900000, new[] { "Nâu", "Mặc định" }),
+                    new RoomProductSeed("BEDROOM-004", "Combo Giường - Tủ Đầu Giường VLINE 1m6",
+                        "Thân giường gỗ tự nhiên veneer sồi, chân giường gỗ cao su tự nhiên, thiết kế đồng bộ.",
+                        "Gỗ tự nhiên veneer sồi, gỗ cao su tự nhiên", 12500000, new[] { "Nâu", "Mặc định" }),
+                    new RoomProductSeed("BEDROOM-005", "Combo Giường - Tủ Đầu Giường HOBRO 1m6",
+                        "Thân giường gỗ tràm tự nhiên/MDF veneer tràm, tấm phản plywood chuẩn CARB-P2.",
+                        "Gỗ tràm tự nhiên, MDF veneer tràm", 11200000, new[] { "Mặc định" }),
+                }),
+                ("Phòng Khách", new List<RoomProductSeed>
+                {
+                    new RoomProductSeed("LIVING-001", "Ghế Sofa Da Microfiber PU MOHO RIGA Dark Grey",
+                        "Da Microfiber PU bền bỉ, khung gỗ tự nhiên, chân sắt sơn tĩnh điện, đệm mút êm ái giữ phom dáng.",
+                        "Da Microfiber PU, khung gỗ tự nhiên, chân sắt sơn tĩnh điện", 18500000, new[] { "Xám ghi" }),
+                    new RoomProductSeed("LIVING-002", "Combo Phòng Khách KLINE (Sofa da Microfiber PU)",
+                        "Bộ combo Sofa KLINE, Kệ TV KLINE và Set bàn cafe KLINE đồng bộ phong cách hiện đại.",
+                        "Microfiber PU, gỗ công nghiệp MFC/MDF/PP phủ Melamine chuẩn CARB-P2", 27800000, new[] { "Đen" }),
+                    new RoomProductSeed("LIVING-003", "Ghế Armchair Xoay 360 Kèm Đôn MOHO OASIS",
+                        "Ghế lounge xoay 360 kèm đôn, vải 100% polyester, chân hợp kim chống gỉ, đạt chuẩn chống cháy BS 5852.",
+                        "Vải polyester, chân hợp kim chống gỉ sét", 9600000, new[] { "Xám" }),
+                    new RoomProductSeed("LIVING-004", "Bàn Sofa - Bàn Cafe - Bàn Trà Gỗ MOHO VLINE 501",
+                        "Mặt bàn gỗ tự nhiên kết hợp gỗ công nghiệp MDF chuẩn CARB-P2, veneer gỗ sồi tự nhiên.",
+                        "Gỗ tự nhiên, MDF chuẩn CARB-P2, veneer gỗ sồi", 4200000, new[] { "Vàng sồi" }),
+                    new RoomProductSeed("LIVING-005", "Ghế Đôn Sofa Gỗ Cao Su Tự Nhiên MOHO VLINE 601",
+                        "Ghế đôn gỗ cao su tự nhiên, vải sợi tổng hợp chống nhăn kháng bụi bẩn và nấm mốc.",
+                        "Gỗ cao su tự nhiên, vải sợi tổng hợp", 2800000, new[] { "Nâu", "Mặc định" }),
+                }),
+                ("Phòng Ăn", new List<RoomProductSeed>
+                {
+                    new RoomProductSeed("DINING-001", "Bộ Bàn Ăn MILAN & 4 Ghế ăn VLINE Cao 820",
+                        "Bộ bàn ăn và 4 ghế VLINE, gỗ cao su tự nhiên, plywood chuẩn CARB-P2, vải bọc polyester chống nhăn.",
+                        "Gỗ cao su tự nhiên, plywood chuẩn CARB-P2, vải bọc polyester", 22500000, new[] { "Vàng sồi" }),
+                    new RoomProductSeed("DINING-002", "Ghế Gỗ Tần Bì Đệm Da DALUMD",
+                        "Khung và chân gỗ tần bì (Ash) tự nhiên, đệm ngồi Foam D3050 mật độ cao, bọc da PU cao cấp.",
+                        "Gỗ tần bì tự nhiên, Foam D3050, da PU cao cấp", 3500000, new[] { "Nâu", "Mặc định" }),
+                    new RoomProductSeed("DINING-003", "Ghế Gỗ HERNING Lưng Mây Đan",
+                        "Khung gỗ cao su tự nhiên nguyên khối, tựa lưng mây đan mắt cáo, đệm mút Foam D3050 chống xẹp lún.",
+                        "Gỗ cao su tự nhiên, mây đan, Foam D3050", 4100000, new[] { "Nâu", "Mặc định" }),
+                    new RoomProductSeed("DINING-004", "Ghế Băng PLANK",
+                        "Chân ghế gỗ cao su tự nhiên chắc chắn, mặt ghế phủ veneer sồi vân bông ghép đảo chiều.",
+                        "Gỗ cao su tự nhiên, veneer sồi trắng", 3900000, new[] { "Nâu", "Mặc định" }),
+                    new RoomProductSeed("DINING-005", "Bàn Ăn Gỗ 1m6 SERENA",
+                        "Mặt bàn MDF chuẩn CARB-P2 phủ veneer gỗ sồi, khung và chân bàn gỗ cao su tự nhiên.",
+                        "MDF chuẩn CARB-P2 phủ veneer gỗ sồi, gỗ cao su tự nhiên", 9800000, new[] { "Vàng sồi" }),
+                }),
+                ("Phòng Làm Việc", new List<RoomProductSeed>
+                {
+                    new RoomProductSeed("OFFICE-001", "Bàn Làm Việc Gỗ MOHO VLINE 601",
+                        "Mặt bàn gỗ công nghiệp MDF chuẩn CARB-P2, veneer gỗ tràm tự nhiên, chân bàn gỗ tràm tự nhiên.",
+                        "Gỗ công nghiệp MDF chuẩn CARB-P2, veneer gỗ tràm", 3600000, new[] { "Nâu", "Mặc định" }),
+                    new RoomProductSeed("OFFICE-002", "Bàn Làm Việc Gỗ MOHO FYN 601",
+                        "Mặt bàn gỗ công nghiệp PB chuẩn CARB-P2, veneer gỗ sồi tự nhiên, cụm hộc tủ tiện lợi.",
+                        "Gỗ công nghiệp PB chuẩn CARB-P2, veneer gỗ sồi", 4200000, new[] { "Nâu", "Mặc định" }),
+                    new RoomProductSeed("OFFICE-003", "Bàn Máy Tính Gỗ MOHO WORKS 702",
+                        "Mặt bàn gỗ công nghiệp MFC cao cấp chuẩn CARB-P2, chân bàn và giá đỡ sắt sơn tĩnh điện.",
+                        "Gỗ công nghiệp MFC cao cấp chuẩn CARB-P2, sắt sơn tĩnh điện", 3200000, new[] { "Đen" }),
+                    new RoomProductSeed("OFFICE-004", "Ghế Ruby Greige",
+                        "Phom dáng bo cong mềm mại, vải bọc 100% Polyester, khung ván ép tự nhiên, chân thép sơn tĩnh điện.",
+                        "Vải Polyester, mút polyurethane, khung ván ép tự nhiên", 2900000, new[] { "Xám" }),
+                    new RoomProductSeed("OFFICE-005", "Kệ Sách Division B2 White",
+                        "Kệ sách MDF sơn lacquer trắng, thiết kế tối giản phù hợp góc làm việc hiện đại.",
+                        "MDF sơn lacquer trắng", 3100000, new[] { "Trắng" }),
+                }),
+            };
+
+            foreach (var (roomCategoryName, seedProducts) in roomProductGroups)
+            {
+                var category = await GetOrCreateCategoryAsync(context, roomCategoryName);
+
+                foreach (var seed in seedProducts)
+                {
+                    var exists = await context.Products.AnyAsync(p => p.ProductCode == seed.ProductCode);
+                    if (exists) continue;
+
+                    var product = new Product
+                    {
+                        ProductCode = seed.ProductCode,
+                        ProductName = seed.Name,
+                        Slug = ToSlug(seed.Name) + "-" + seed.ProductCode.ToLower(),
+                        CategoryId = category.Id,
+                        ShortDescription = seed.Description.Length > 150 ? seed.Description.Substring(0, 150) : seed.Description,
+                        Description = seed.Description,
+                        Material = seed.Material,
+                        Style = "Modern",
+                        RoomType = roomCategoryName,
+                        WarrantyMonths = 24,
+                        Status = "Active",
+                        IsFeatured = false,
+                        AverageRating = 5.0m,
+                        ReviewCount = 0
+                    };
+
+                    context.Products.Add(product);
+                    await context.SaveChangesAsync(); // Cần Id trước khi tạo variant/ảnh
+
+                    foreach (var color in seed.Colors)
+                    {
+                        context.ProductVariants.Add(new ProductVariant
+                        {
+                            ProductId = product.Id,
+                            Sku = $"{seed.ProductCode}-{color}".ToUpper().Replace(" ", ""),
+                            VariantName = color,
+                            Color = color,
+                            CurrentPrice = seed.Price,
+                            CompareAtPrice = null,
+                            Status = "Active"
+                        });
+                    }
+
+                    context.ProductImages.Add(new ProductImage
+                    {
+                        ProductId = product.Id,
+                        ImageUrl = "https://images.unsplash.com/photo-1540518614846-7eded433c457?auto=format&fit=crop&q=80&w=800",
+                        AltText = seed.Name,
+                        IsMain = true
+                    });
+
+                    await context.SaveChangesAsync();
+                }
+            }
+        }
+
+        private static async Task<Category> GetOrCreateCategoryAsync(LuxeHomeDbContext context, string categoryName)
+        {
+            var existing = await context.Categories.FirstOrDefaultAsync(c => c.CategoryName == categoryName);
+            if (existing != null) return existing;
+
+            var newCategory = new Category
+            {
+                CategoryName = categoryName,
+                Slug = ToSlug(categoryName),
+                Description = "Danh mục các sản phẩm nội thất cao cấp dành cho " + categoryName,
+                IsVisible = true,
+                Status = "Active"
+            };
+            context.Categories.Add(newCategory);
+            await context.SaveChangesAsync();
+            return newCategory;
+        }
+
+        private static string ToSlug(string text)
+        {
+            return text.ToLower().Replace("đ", "d").Replace(" ", "-");
+        }
+
+        private record RoomProductSeed(string ProductCode, string Name, string Description, string Material, decimal Price, string[] Colors);
     }
 }

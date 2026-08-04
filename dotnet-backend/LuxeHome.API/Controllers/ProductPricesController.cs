@@ -52,6 +52,30 @@ namespace LuxeHome.API.Controllers
         [HttpPost("schedule")]
         public async Task<IActionResult> SchedulePriceChange([FromBody] SchedulePriceDto dto)
         {
+            // Chặn tạo lịch mới nếu variant đang có lịch giá chưa chạy xong (PENDING/SCHEDULED)
+            var conflictingVariantIds = await _context.ProductPrices
+                .Where(p => dto.VariantIds.Contains(p.VariantId ?? 0) &&
+                            (p.Status == "PENDING" || p.Status == "SCHEDULED"))
+                .Select(p => p.VariantId)
+                .Distinct()
+                .ToListAsync();
+
+            if (conflictingVariantIds.Any())
+            {
+                var conflictingNames = await _context.ProductVariants
+                    .Where(v => conflictingVariantIds.Contains(v.Id))
+                    .Include(v => v.Product)
+                    .Select(v => v.Product.ProductName + " (" + (v.Color ?? v.VariantName) + ")")
+                    .ToListAsync();
+
+                return Conflict(new
+                {
+                    message = "Không thể tạo lịch giá mới vì các sản phẩm sau đang có lịch giá chưa được áp dụng xong: "
+                        + string.Join(", ", conflictingNames)
+                        + ". Vui lòng chờ lịch giá cũ hoàn tất (chuyển sang Đang Áp Dụng) rồi mới tạo lịch mới."
+                });
+            }
+
             // Trạng thái mặc định là PENDING, chờ Quản trị viên duyệt
             foreach (var variantId in dto.VariantIds)
             {

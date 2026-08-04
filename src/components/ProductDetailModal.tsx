@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { X, Heart, Shield, Rotate3d, Check, Sparkles, Scale } from "lucide-react";
+import { X, Shield, Rotate3d, Check, Sparkles, Scale } from "lucide-react";
 import { Product } from "../types";
 
 interface ProductDetailModalProps {
@@ -8,8 +8,6 @@ interface ProductDetailModalProps {
   onAddToCart: (product: Product, quantity: number, color: string, assemble: boolean) => void;
   onToggleCompare: (product: Product) => void;
   isCompared: boolean;
-  onToggleWishlist: (productId: string) => void;
-  isWishlisted: boolean;
 }
 
 export default function ProductDetailModal({
@@ -18,8 +16,6 @@ export default function ProductDetailModal({
   onAddToCart,
   onToggleCompare,
   isCompared,
-  onToggleWishlist,
-  isWishlisted,
 }: ProductDetailModalProps) {
   useEffect(() => {
     const previousBodyOverflow = document.body.style.overflow;
@@ -105,13 +101,6 @@ export default function ProductDetailModal({
 
           {/* Header Controls */}
           <div className="absolute top-4 right-4 z-10 flex gap-2">
-            <button
-              onClick={() => onToggleWishlist(product.id)}
-              className="p-2.5 rounded-full bg-white/90 hover:bg-white text-[#5C4033] shadow-md transition-transform active:scale-95"
-              id="detail-wishlist-toggle"
-            >
-              <Heart className={`w-5 h-5 ${isWishlisted ? "fill-red-500 text-red-500" : ""}`} />
-            </button>
             <button
               onClick={onClose}
               className="p-2.5 rounded-full bg-white/90 hover:bg-white text-[#5C4033] shadow-md transition-transform active:scale-95"

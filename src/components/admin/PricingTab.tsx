@@ -153,6 +153,8 @@ export default function PricingTab() {
     
     try {
       let successCount = 0;
+      const conflictMessages: string[] = [];
+
       for (const vId of selectedVariantIds) {
         const variant = variants.find(v => v.variantId === vId);
         if (!variant) continue;
@@ -176,7 +178,16 @@ export default function PricingTab() {
           body: JSON.stringify(payload)
         });
 
-        if (res.ok) successCount++;
+        if (res.ok) {
+          successCount++;
+        } else if (res.status === 409) {
+          const errBody = await res.json().catch(() => null);
+          conflictMessages.push(errBody?.message || `${variant.productName} (${variant.variantName}) đang có lịch giá chưa hoàn tất.`);
+        }
+      }
+
+      if (conflictMessages.length > 0) {
+        alert("Một số sản phẩm không thể lên lịch giá:\n\n" + conflictMessages.join("\n\n"));
       }
 
       if (successCount > 0) {

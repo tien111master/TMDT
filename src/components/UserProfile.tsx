@@ -1,16 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { API_BASE_URL } from '../api/api';
 import { Order, Product } from "../types";
-import { User, Phone, MapPin, Heart, ShoppingBag, Star, CheckCircle, RefreshCw, Sparkles, Ticket } from "lucide-react";
+import { User, Phone, MapPin, ShoppingBag, Star, CheckCircle, RefreshCw, Sparkles, Ticket } from "lucide-react";
 import { authApi, orderApi, promotionApi } from "../api/api";interface UserProfileProps {
   currentUser: { name: string; email: string; phone?: string } | null;
   onUpdatePersonalInfo: (name: string, email: string, phone?: string) => void;
   onCancelOrder?: (orderId: string) => void;
   orders: Order[];
-  wishlist: string[];
-  products: Product[];
-  onSelectProduct: (product: Product) => void;
-  onRemoveFromWishlist: (productId: string) => void;
   onAddReviewToProduct: (productId: string, rating: number, comment: string, author: string) => void;
 }
 
@@ -18,16 +14,12 @@ export default function UserProfile({
   currentUser,
   onUpdatePersonalInfo,
   orders,
-  wishlist,
-  products,
-  onSelectProduct,
-  onRemoveFromWishlist,
   onAddReviewToProduct,
   onCancelOrder
 }: UserProfileProps) {
   
   // --- Trạng thái Sub-tab & Thông tin cá nhân ---
-const [profileSubTab, setProfileSubTab] = useState<"info" | "orders" | "wishlist" | "promotions">("orders");
+const [profileSubTab, setProfileSubTab] = useState<"info" | "orders" | "promotions">("orders");
 const [editedName, setEditedName] = useState(currentUser?.name || "");
 const [editedEmail, setEditedEmail] = useState(currentUser?.email || "");
 const [phone, setPhone] = useState(currentUser?.phone || "");
@@ -314,7 +306,7 @@ useEffect(() => {
     alert("Cảm ơn Quý khách đã gửi ý kiến phản hồi quý giá cho LuxeHome!");
   };
 
-  const wishlistProducts = products.filter((p) => wishlist.includes(p.id));
+  
   const handleReturnImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   const files = Array.from(e.target.files || []);
 
@@ -365,7 +357,6 @@ const clearReturnForm = () => {
           <div className="space-y-1.5" id="profile-tabs-sidebar">
             {[
               { id: "orders", label: `Lịch sử đơn hàng (${orders.length})`, icon: ShoppingBag },
-              { id: "wishlist", label: `Sản phẩm yêu thích (${wishlist.length})`, icon: Heart },
               { id: "promotions", label: `Mã giảm giá của tôi (${myPromotions.length})`, icon: Ticket },
 
               { id: "info", label: "Cài đặt & Sổ địa chỉ", icon: MapPin },
@@ -747,40 +738,6 @@ setIsReviewModalOpen(true);
             </div>
           )}
 
-          {/* Subtab: Sản phẩm yêu thích */}
-          {profileSubTab === "wishlist" && (
-            <div className="space-y-6" id="profile-wishlist-view">
-              <div className="border-b border-[#EADBC8] pb-4">
-                <h3 className="font-serif text-lg font-bold text-[#1A1A1A]">Danh tuyển yêu thích của bạn</h3>
-                <p className="text-xs text-[#8B7E74]">Tuyển chọn các tác phẩm nội thất chạm trổ cao cấp sẵn sàng ghép giỏ.</p>
-              </div>
-
-              {wishlistProducts.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {wishlistProducts.map((p) => (
-                    <div key={p.id} className="flex gap-4 p-3 bg-[#FAF6F0]/50 rounded-xl border border-[#EADBC8] items-center justify-between">
-                      <div className="flex gap-3 items-center min-w-0 flex-1">
-                        <img src={p.images[0]} alt={p.name} className="w-14 h-14 object-cover rounded-lg" />
-                        <div className="min-w-0">
-                          <h4 className="font-serif text-xs font-bold text-[#1A1A1A] truncate max-w-[150px]">{p.name}</h4>
-                          <span className="text-xs text-[#5C4033] font-bold">{formattedPrice(p.price)}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => onSelectProduct(p)} className="px-3 py-1 bg-[#5C4033] hover:bg-[#4A3B32] text-white text-[10px] uppercase font-bold rounded">Cấu hình</button>
-                        <button onClick={() => onRemoveFromWishlist(p.id)} className="text-xs text-red-600 hover:underline">Xóa</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="py-12 text-center bg-[#FAF6F0] rounded-2xl border border-dashed border-[#EADBC8]">
-                  <Heart className="w-10 h-10 text-red-500/50 mx-auto mb-3" />
-                  <p className="text-xs text-[#8B7E74] italic">Anh/Chị chưa đánh dấu yêu thích kiệt tác nào.</p>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Subtab: Cài đặt tài khoản & Đổ danh sách Sổ địa chỉ thật */}
           {profileSubTab === "info" && (

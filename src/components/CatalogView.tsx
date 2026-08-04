@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { Search, Filter, SlidersHorizontal, Trash2, ArrowUpDown, Star, Heart, FileText, Check, AlertCircle, Scale, Eye, ChevronDown } from "lucide-react";
+import { Search, Filter, SlidersHorizontal, Trash2, ArrowUpDown, Star, FileText, Check, AlertCircle, Scale, Eye, ChevronDown } from "lucide-react";
 import { Product } from "../types";
 
 interface CatalogViewProps {
@@ -10,8 +10,6 @@ interface CatalogViewProps {
   isLoading: boolean;
   onPageChange: (page: number) => void;
   onSelectProduct: (product: Product) => void;
-  onToggleWishlist: (productId: string) => void;
-  wishlist: string[];
   initialCategory?: string;
   initialStyle?: string;
 }
@@ -24,8 +22,6 @@ export default function CatalogView({
   isLoading,
   onPageChange,
   onSelectProduct,
-  onToggleWishlist,
-  wishlist,
   initialCategory = "",
   initialStyle = "",
 }: CatalogViewProps) {
@@ -37,7 +33,6 @@ export default function CatalogView({
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [selectedStyle, setSelectedStyle] = useState(initialStyle);
   const [selectedColor, setSelectedColor] = useState("");
-  const [selectedBrand, setSelectedBrand] = useState("");
   const [maxPrice, setMaxPrice] = useState<number>(75000000);
   const [sortBy, setSortBy] = useState<string>("rating"); // rating, price-asc, price-desc, name
 
@@ -52,9 +47,6 @@ export default function CatalogView({
     return Array.from(colors);
   }, [products]);
 
-  const brandOptions = useMemo(() => {
-    return Array.from(new Set(products.map((p) => p.brand)));
-  }, [products]);
 
   // Handle filter logic
   const filteredProducts = useMemo(() => {
@@ -67,7 +59,6 @@ export default function CatalogView({
 
         const matchesCategory = selectedCategory ? p.category === selectedCategory : true;
         const matchesStyle = selectedStyle ? p.style === selectedStyle : true;
-        const matchesBrand = selectedBrand ? p.brand === selectedBrand : true;
         
         const matchesColor = selectedColor
           ? p.colors.some((c) => c.toLowerCase().includes(selectedColor.toLowerCase()))
@@ -75,7 +66,7 @@ export default function CatalogView({
 
         const matchesPrice = p.price <= maxPrice;
 
-        return matchesSearch && matchesCategory && matchesStyle && matchesBrand && matchesColor && matchesPrice;
+        return matchesSearch && matchesCategory && matchesStyle && matchesColor && matchesPrice;
       })
       .sort((a, b) => {
         if (sortBy === "rating") return b.rating - a.rating;
@@ -84,7 +75,7 @@ export default function CatalogView({
         if (sortBy === "name") return a.name.localeCompare(b.name);
         return 0;
       });
-  }, [products, searchQuery, selectedCategory, selectedStyle, selectedBrand, selectedColor, maxPrice, sortBy]);
+  }, [products, searchQuery, selectedCategory, selectedStyle, selectedColor, maxPrice, sortBy]);
 
   // Manage comparative lists
   const toggleCompare = (prod: Product) => {
@@ -104,7 +95,6 @@ export default function CatalogView({
     setSelectedCategory("");
     setSelectedStyle("");
     setSelectedColor("");
-    setSelectedBrand("");
     setMaxPrice(75000000);
     setSortBy("rating");
   };
@@ -252,35 +242,6 @@ export default function CatalogView({
             </div>
           </div>
 
-          {/* Brand select list */}
-          <div className="space-y-2">
-            <h3 className="text-xs font-semibold text-[#5C4033] uppercase tracking-wider mb-2">Xưởng Thương Hiệu</h3>
-            <div className="flex flex-wrap gap-1.5">
-              <button
-                onClick={() => setSelectedBrand("")}
-                className={`text-[10px] px-2.5 py-1 rounded-full border transition-all ${
-                  selectedBrand === ""
-                    ? "bg-[#5C4033] text-white border-[#5C4033]"
-                    : "bg-white text-[#5C4033] border-[#EADBC8] hover:bg-[#FAF6F0]"
-                }`}
-              >
-                Tài phiệt chung
-              </button>
-              {brandOptions.map((brand) => (
-                <button
-                  key={brand}
-                  onClick={() => setSelectedBrand(brand)}
-                  className={`text-[10px] px-2.5 py-1 rounded-full border transition-all ${
-                    selectedBrand === brand
-                      ? "bg-[#5C4033] text-white border-[#5C4033]"
-                      : "bg-white text-[#5C4033] border-[#EADBC8] hover:bg-[#FAF6F0]"
-                  }`}
-                >
-                  {brand}
-                </button>
-              ))}
-            </div>
-          </div>
 
           {/* Colors palette criteria */}
           <div className="space-y-2">
@@ -368,12 +329,6 @@ export default function CatalogView({
                           <Eye className="w-4 h-4" />
                         </button>
                         
-                        <button
-                          onClick={() => onToggleWishlist(p.id)}
-                          className="p-2.5 rounded-full bg-white text-[#5C4033] hover:bg-red-500 hover:text-white transition-colors shadow"
-                        >
-                          <Heart className={`w-4 h-4 ${wishlist.includes(p.id) ? "fill-red-500 text-red-500" : ""}`} />
-                        </button>
 
                         <button
                           onClick={() => toggleCompare(p)}

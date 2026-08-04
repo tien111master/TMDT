@@ -166,7 +166,7 @@ export default function App() {
       return [];
     }
   });
-  const [wishlist, setWishlist] = useState<string[]>(["prod-01", "prod-03"]);
+  
   const [catalogCurrentPage, setCatalogCurrentPage] = useState<number>(1);
   const [catalogTotalPages, setCatalogTotalPages] = useState<number>(1);
   const [catalogTotalItems, setCatalogTotalItems] = useState<number>(0);
@@ -546,10 +546,6 @@ const savedRole = sessionStorage.getItem("user_role");
     alert(`Đã thêm trọn bộ ${combo.name} vào giỏ hàng thành công!`);
   };
 
-  const handleToggleWishlist = (productId: string) => {
-    setWishlist((prev) => prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]);
-  };
-
   const loadMyOrders = () => {
     const token = sessionStorage.getItem("token") || localStorage.getItem("token");
     if (!token) return;
@@ -808,7 +804,6 @@ const handleUpdateProductStock = async (productId: string, newStock: number) => 
           setActiveTab(tab);
         }}
         cart={cart}
-        wishlist={wishlist}
         currentUser={currentUser}
         onOpenAuth={() => setIsAuthOpen(true)}
         onOpenCart={() => setIsCartOpen(true)}
@@ -832,8 +827,6 @@ const handleUpdateProductStock = async (productId: string, newStock: number) => 
       }}
       onNavigateToCatalog={handleNavigateToCatalogWithFilters}
       onNavigateToDesign={() => setActiveTab("design")}
-      onToggleWishlist={handleToggleWishlist}
-      wishlist={wishlist}
     />
 
     <HomePromotions
@@ -851,8 +844,6 @@ const handleUpdateProductStock = async (productId: string, newStock: number) => 
             isLoading={isCatalogLoading}
             onPageChange={(page) => fetchCatalogProducts(page)}
             onSelectProduct={(p) => setSelectedProductForDetail(p)}
-            onToggleWishlist={handleToggleWishlist}
-            wishlist={wishlist}
             initialCategory={catalogFilters.category}
             initialStyle={catalogFilters.style}
           />
@@ -872,7 +863,7 @@ const handleUpdateProductStock = async (productId: string, newStock: number) => 
         />
       )}
 
-        {(activeTab === "profile" || activeTab === "profile-wishlist") && (
+        {activeTab === "profile" && (
           <UserProfile
             currentUser={currentUser}
             onUpdatePersonalInfo={(name, email, phone) => {
@@ -881,10 +872,6 @@ const handleUpdateProductStock = async (productId: string, newStock: number) => 
               }
             }}
             orders={orders}
-            wishlist={wishlist}
-            products={products}
-            onSelectProduct={(p) => setSelectedProductForDetail(p)}
-            onRemoveFromWishlist={handleToggleWishlist}
             onAddReviewToProduct={handleAddReviewToProduct}
             onCancelOrder={handleCancelOrder}
 
@@ -954,8 +941,6 @@ const handleUpdateProductStock = async (productId: string, newStock: number) => 
             }
           }}
           isCompared={comparedProductIds.includes(selectedProductForDetail.id)}
-          onToggleWishlist={handleToggleWishlist}
-          isWishlisted={wishlist.includes(selectedProductForDetail.id)}
         />
       )}
 

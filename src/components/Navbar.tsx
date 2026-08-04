@@ -1,12 +1,11 @@
 import React from "react";
-import { ShoppingBag, Heart, User, ShieldAlert, Sparkles, Compass, Layers, Ticket } from "lucide-react";
+import { ShoppingBag, User, ShieldAlert, Sparkles, Compass, Layers, Ticket } from "lucide-react";
 import { CartItem } from "../types";
 import CustomerChatWidget from "../components/CustomerChatWidget";
 interface NavbarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   cart: CartItem[];
-  wishlist: string[];
   currentUser: {
     id?: string | number | null;
     name: string;
@@ -23,7 +22,6 @@ export default function Navbar({
   activeTab,
   setActiveTab,
   cart,
-  wishlist,
   currentUser,
   onOpenAuth,
   onOpenCart,
@@ -119,20 +117,6 @@ export default function Navbar({
               </button>
             )}
 
-            {/* Wishlist Button */}
-            <button
-              onClick={() => setActiveTab("profile-wishlist")}
-              className="relative p-1.5 sm:p-2 rounded-full hover:bg-[#F4EBE1] text-[#4A3B32] transition-colors shrink-0"
-              title="Sản phẩm yêu thích"
-              id="btn-wishlist"
-            >
-              <Heart className={`w-5 h-5 ${wishlist.length > 0 ? "fill-red-500 text-red-500" : ""}`} />
-              {wishlist.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center border-2 border-[#FAF6F0]">
-                  {wishlist.length}
-                </span>
-              )}
-            </button>
 
             {/* Cart Button */}
             <button

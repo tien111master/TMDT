@@ -1,5 +1,5 @@
 import React from "react";
-import { Sparkles, ArrowRight, Star, Quote, Compass, Layers, ShieldCheck, Heart } from "lucide-react";
+import { Sparkles, ArrowRight, Star, Quote, Compass, Layers, ShieldCheck } from "lucide-react";
 import { Product, Combo, BlogPost } from "../types";
 
 interface HomeViewProps {
@@ -10,8 +10,6 @@ interface HomeViewProps {
   onSelectCombo: (combo: Combo) => void;
   onNavigateToCatalog: (filters: { category?: string; style?: string }) => void;
   onNavigateToDesign: () => void;
-  onToggleWishlist: (productId: string) => void;
-  wishlist: string[];
 }
 
 export default function HomeView({
@@ -22,8 +20,6 @@ export default function HomeView({
   onSelectCombo,
   onNavigateToCatalog,
   onNavigateToDesign,
-  onToggleWishlist,
-  wishlist,
 }: HomeViewProps) {
   
   // Featured Items
@@ -182,7 +178,6 @@ export default function HomeView({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {featuredProducts.map((p) => {
-            const isWish = wishlist.includes(p.id);
             return (
               <div 
                 key={p.id}
@@ -191,18 +186,7 @@ export default function HomeView({
                 <div className="relative aspect-square bg-[#FAF6F0] overflow-hidden group">
                   <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                   
-                  {/* Floating wishlist trigger */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onToggleWishlist(p.id);
-                    }}
-                    className="absolute top-3 right-3 p-2 rounded-full bg-white/90 shadow-md hover:bg-white text-red-500 transition-colors"
-                  >
-                    <Heart className={`w-4 h-4 ${isWish ? "fill-red-500" : "text-gray-400"}`} />
-                  </button>
-
-                  <div 
+                  <div
                     onClick={() => onSelectProduct(p)}
                     className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer"
                   >
