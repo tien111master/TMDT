@@ -23,6 +23,7 @@ namespace LuxeHome.Application.DTOs
         public string ImageUrl { get; set; }
         public bool IsMain { get; set; }
         public int SortOrder { get; set; }
+        public long? VariantId { get; set; }
     }
 
     public class CreateProductVariantDto

@@ -64,15 +64,10 @@ namespace LuxeHome.Infrastructure.Data
                 // Lấy lần lượt các tên danh mục chuẩn xác
                 .RuleFor(c => c.CategoryName, f => f.PickRandom(categoryNames))
                 .RuleFor(c => c.Slug, (f, c) =>
-{
-    var categoryName = c.CategoryName ?? "danh-muc";
-
-    return categoryName
-        .ToLower()
-        .Replace(" ", "-")
-        .Replace("đ", "d")
-        + "-" + f.Random.Number(100, 999);
-})           
+                {
+                    var categoryName = c.CategoryName ?? "danh-muc";
+                    return ToSlug(categoryName) + "-" + f.Random.Number(100, 999);
+                })         
                 .RuleFor(c => c.Description, (f, c) =>
                 {
                     var categoryName = c.CategoryName ?? "danh mục";
@@ -101,12 +96,7 @@ namespace LuxeHome.Infrastructure.Data
     .RuleFor(p => p.Slug, (f, p) =>
     {
         var productName = p.ProductName ?? "san-pham";
-
-        return productName
-            .ToLower()
-            .Replace(" ", "-")
-            .Replace("đ", "d")
-            + "-" + f.Random.AlphaNumeric(5).ToLower();
+        return ToSlug(productName) + "-" + f.Random.AlphaNumeric(5).ToLower();
     })
 
     .RuleFor(p => p.ShortDescription, (f, p) =>
@@ -287,7 +277,7 @@ namespace LuxeHome.Infrastructure.Data
 
                     foreach (var color in seed.Colors)
                     {
-                        context.ProductVariants.Add(new ProductVariant
+                        var variant = new ProductVariant
                         {
                             ProductId = product.Id,
                             Sku = $"{seed.ProductCode}-{color}".ToUpper().Replace(" ", ""),
@@ -296,16 +286,19 @@ namespace LuxeHome.Infrastructure.Data
                             CurrentPrice = seed.Price,
                             CompareAtPrice = null,
                             Status = "Active"
+                        };
+                        context.ProductVariants.Add(variant);
+                        await context.SaveChangesAsync(); // cần Id variant trước khi gắn ảnh
+
+                        context.ProductImages.Add(new ProductImage
+                        {
+                            ProductId = product.Id,
+                            VariantId = variant.Id,
+                            ImageUrl = "https://images.unsplash.com/photo-1540518614846-7eded433c457?auto=format&fit=crop&q=80&w=800",
+                            AltText = $"{seed.Name} - {color}",
+                            IsMain = color == seed.Colors[0]
                         });
                     }
-
-                    context.ProductImages.Add(new ProductImage
-                    {
-                        ProductId = product.Id,
-                        ImageUrl = "https://images.unsplash.com/photo-1540518614846-7eded433c457?auto=format&fit=crop&q=80&w=800",
-                        AltText = seed.Name,
-                        IsMain = true
-                    });
 
                     await context.SaveChangesAsync();
                 }

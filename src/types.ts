@@ -16,12 +16,13 @@ export interface Product {
   category: "phong-khach" | "phong-ngu" | "phong-an" | "van-phong";
   categoryName: string; // e.g., Phòng Khách, Phòng Ngủ, etc.
   style: "Modern" | "Luxury" | "Minimalist" | "Scandinavian";
-  images: string[]; // List of 4 images for 360 viewer & gallery
+  images: { url: string; variantId?: number | null }[]; // Ảnh gắn theo biến thể màu; variantId = null nghĩa là ảnh dùng chung
   description: string;
   longDescription?: string;
   material: string;
   dimensions: string;
   colors: string[];
+  variants?: { id: number; color: string }[]; // Danh sách biến thể (id + màu) để đối chiếu ảnh theo variantId
   features: string[];
   warranty: string;
   stock: number;

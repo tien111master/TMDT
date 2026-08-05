@@ -316,7 +316,7 @@ export default function CatalogView({
                     className="bg-white rounded-2xl border border-[#EADBC8] overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
                   >
                     <div className="relative aspect-square bg-[#FAF6F0] overflow-hidden group">
-                      <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                      <img src={p.images[0]?.url} alt={p.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                       
                       <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-3 transition-opacity">
                         <button
@@ -436,7 +436,7 @@ export default function CatalogView({
             <div className="flex gap-4">
               {comparedProducts.map((p) => (
                 <div key={p.id} className="relative flex items-center gap-2.5 bg-[#FAF6F0] p-2.5 rounded-lg border border-[#EADBC8]">
-                  <img src={p.images[0]} alt="comp-img" className="w-8 h-8 rounded object-cover" />
+                  <img src={p.images[0]?.url} alt="comp-img" className="w-8 h-8 rounded object-cover" />
                   <div className="text-left">
                     <p className="text-[9px] font-bold text-[#1A1A1A] max-w-[100px] truncate">{p.name}</p>
                     <span className="text-[9px] text-[#5C4033] font-semibold">{formattedPrice(p.price)}</span>
@@ -499,7 +499,7 @@ export default function CatalogView({
               {comparedProducts.map((p) => (
                 <div key={p.id} className="text-center space-y-4">
                   <div className="flex flex-col items-center">
-                    <img src={p.images[0]} alt={p.name} className="w-20 h-20 object-cover rounded-xl shadow mb-2 border border-[#EADBC8]" />
+                    <img src={p.images[0]?.url} alt={p.name} className="w-20 h-20 object-cover rounded-xl shadow mb-2 border border-[#EADBC8]" />
                     <h3 className="font-serif text-xs font-black text-[#1A1A1A] line-clamp-1">{p.name}</h3>
                     <p className="text-[10px] text-[#D4AF37]">{p.brand}</p>
                   </div>

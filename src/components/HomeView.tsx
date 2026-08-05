@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Sparkles, ArrowRight, Star, Quote, Compass, Layers, ShieldCheck } from "lucide-react";
 import { Product, Combo, BlogPost } from "../types";
+import { API_BASE_URL } from "../api/api";
 
 interface HomeViewProps {
   products: Product[];
@@ -21,10 +22,32 @@ export default function HomeView({
   onNavigateToCatalog,
   onNavigateToDesign,
 }: HomeViewProps) {
-  
+
   // Featured Items
   const featuredProducts = products.slice(0, 4);
   const bestSellers = products.filter(p => p.rating >= 4.9).slice(0, 4);
+
+  // Tổng số sản phẩm THẬT theo từng category, lấy từ backend
+  // (không đếm trên `products` client vì đó chỉ là 12 sản phẩm trang đầu)
+  const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/api/products/category-counts`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Lỗi lấy số lượng sản phẩm theo danh mục");
+        return res.json();
+      })
+      .then((data: { slug: string; count: number }[]) => {
+        const map: Record<string, number> = {};
+        (data || []).forEach((d) => {
+          const slug = (d as any).slug ?? (d as any).Slug;
+          const count = (d as any).count ?? (d as any).Count;
+          if (slug) map[slug] = count;
+        });
+        setCategoryCounts(map);
+      })
+      .catch((err) => console.error("Lỗi đồng bộ số lượng sản phẩm theo khu vực:", err));
+  }, []);
 
   const formattedPrice = (price: number) => {
     return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(price);
@@ -32,17 +55,17 @@ export default function HomeView({
 
   return (
     <div className="space-y-16 animate-fade-in" id="home-view-page">
-      
+
       {/* 1. Hero Big Banner */}
       <section className="relative overflow-hidden bg-[#FAF6F0] border-b border-[#EADBC8]" id="hero-banner-section">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-          
+
           <div className="lg:col-span-5 space-y-6">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#D4AF37]/10 text-[#D4AF37] rounded-full text-xs font-bold uppercase tracking-wider">
               <Sparkles className="w-3.5 h-3.5" />
               Sự Độc Bản Trong Từng Sớ Gỗ
             </div>
-            
+
             <h1 className="font-serif text-4xl sm:text-6xl font-black text-[#1A1A1A] leading-tight-none tracking-tight">
               Nâng Tầm <br/>
               Kiến Trúc <br/>
@@ -59,10 +82,10 @@ export default function HomeView({
                 className="px-6 py-3 bg-[#5C4033] hover:bg-[#4A3B32] text-[#FAF6F0] text-xs font-bold tracking-widest uppercase rounded-lg shadow-lg hover:shadow-xl transition-all flex items-center gap-2"
                 id="hero-shop-now-btn"
               >
-                Trải Nghiệm Showroom 
+                Trải Nghiệm Showroom
                 <ArrowRight className="w-4 h-4" />
               </button>
-              
+
               <button
                 onClick={onNavigateToDesign}
                 className="px-6 py-3 bg-white hover:bg-[#F4EBE1] text-[#5C4033] border border-[#EADBC8] text-xs font-bold tracking-widest uppercase rounded-lg transition-all"
@@ -113,7 +136,7 @@ export default function HomeView({
                 />
               </div>
             </div>
-            
+
             {/* Special Floating Tag badge */}
             <div className="absolute -bottom-4 left-6 bg-white rounded-xl p-3 border border-[#EADBC8] shadow-2xl flex items-center gap-3">
               <div className="w-8 h-8 rounded bg-[#D4AF37] flex items-center justify-center text-white text-xs font-bold font-serif">
@@ -138,14 +161,15 @@ export default function HomeView({
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { id: "phong-khach", name: "Phòng Khách", image: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=300", slugs: ["noi-that-phong-khach", "ghe-sofa", "ban-tra", "ke-tivi"] },
-            { id: "phong-ngu", name: "Phòng Ngủ", image: "https://images.unsplash.com/photo-1540518614846-7eded433c457?auto=format&fit=crop&q=80&w=300", slugs: ["noi-that-phong-ngu", "giuong-ngu", "tu-quan-ao"] },
-            { id: "phong-an", name: "Phòng Ăn & Bếp", image: "https://images.unsplash.com/photo-1615066390971-03e4e1c36ddf?auto=format&fit=crop&q=80&w=300", slugs: ["noi-that-nha-bep", "ban-an", "ghe-an"] },
-            { id: "van-phong", name: "Phòng Làm Việc", image: "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&q=80&w=300", slugs: [] }
+            { id: "phong-khach", name: "Phòng Khách", image: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=300" },
+            { id: "phong-ngu", name: "Phòng Ngủ", image: "https://images.unsplash.com/photo-1540518614846-7eded433c457?auto=format&fit=crop&q=80&w=300" },
+            { id: "phong-an", name: "Phòng Ăn & Bếp", image: "https://images.unsplash.com/photo-1615066390971-03e4e1c36ddf?auto=format&fit=crop&q=80&w=300" },
+            { id: "phong-lam-viec", name: "Phòng Làm Việc", image: "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&q=80&w=300" }
           ].map((r) => {
-            const realCount = products.filter((p) => r.slugs.includes(p.category)).length;
+            // Số thật lấy từ /api/products/category-counts, fallback = 0 khi API chưa trả về xong
+            const realCount = categoryCounts[r.id] ?? 0;
             return (
-              <div 
+              <div
                 key={r.id}
                 onClick={() => onNavigateToCatalog({ category: r.id })}
                 className="relative aspect-square rounded-2xl overflow-hidden cursor-pointer group border border-[#EADBC8] shadow-inner"
@@ -179,13 +203,13 @@ export default function HomeView({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {featuredProducts.map((p) => {
             return (
-              <div 
+              <div
                 key={p.id}
                 className="bg-white rounded-2xl border border-[#EADBC8] overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
               >
                 <div className="relative aspect-square bg-[#FAF6F0] overflow-hidden group">
-                  <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                  
+                  <img src={p.images[0]?.url} alt={p.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+
                   <div
                     onClick={() => onSelectProduct(p)}
                     className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer"
@@ -235,7 +259,7 @@ export default function HomeView({
               { id: "Minimalist", name: "Minimalist Chic", tagline: "Ôm trọn eo hông, tối giản vô điều kiện", bg: "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?auto=format&fit=crop&q=80&w=400" },
               { id: "Scandinavian", name: "Scandinavian Nordic", tagline: "Mộc mạc sồi già, vải dệt Rubio nguyên gốc", bg: "https://images.unsplash.com/photo-1615066390971-03e4e1c36ddf?auto=format&fit=crop&q=80&w=400" }
             ].map((st) => (
-              <div 
+              <div
                 key={st.id}
                 onClick={() => onNavigateToCatalog({ style: st.id })}
                 className="relative h-80 rounded-2xl overflow-hidden cursor-pointer group border border-[#FAF6F0]/20"
@@ -265,8 +289,8 @@ export default function HomeView({
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {combos.map((c) => (
-            <div 
-              key={c.id} 
+            <div
+              key={c.id}
               onClick={() => onSelectCombo(c)}
               className="bg-white rounded-2xl border border-[#EADBC8] overflow-hidden shadow-sm hover:shadow-xl transition-all cursor-pointer flex flex-col justify-between"
             >
@@ -311,13 +335,13 @@ export default function HomeView({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {bestSellers.map((p) => (
-              <div 
+              <div
                 key={p.id}
                 onClick={() => onSelectProduct(p)}
                 className="bg-white rounded-xl border border-[#EADBC8] p-4 cursor-pointer hover:shadow-lg transition-transform hover:-translate-y-1 block duration-300"
               >
                 <div className="aspect-square rounded-lg overflow-hidden bg-white mb-3">
-                  <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover" />
+                  <img src={p.images[0]?.url} alt={p.name} className="w-full h-full object-cover" />
                 </div>
                 <span className="text-[10px] text-[#8B7E74] bg-[#F4EBE1] px-2 py-0.5 rounded font-semibold">{p.categoryName}</span>
                 <h4 className="font-serif text-sm font-bold text-[#1A1A1A] mt-2 line-clamp-1">{p.name}</h4>
@@ -359,7 +383,7 @@ export default function HomeView({
                     "{t.text}"
                   </p>
                 </div>
-                
+
                 <div className="flex items-center gap-3 pt-4 border-t border-[#EADBC8]/40 mt-4">
                   <img src={t.avatar} alt={t.author} className="w-10 h-10 rounded-full object-cover border border-[#D4AF37]" />
                   <div>

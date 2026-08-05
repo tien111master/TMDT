@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { API_BASE_URL } from '../../api/api';
-import { Package, Search, Filter, Plus, X, Edit3, Trash2, ChevronLeft, ChevronRight, Image as ImageIcon, Globe, Check, DollarSign, Save, Upload, Loader2 } from "lucide-react";
+import { Package, Search, Filter, Plus, X, Edit3, Trash2, ChevronLeft, ChevronRight, Image as ImageIcon, Globe, Check, DollarSign, Save, Upload, Loader2, Palette } from "lucide-react";
 import { Product } from "../../types";
 import { Category } from "../AdminPanel";
 import { generateSlug } from "../../utils/slug"; 
+import ProductVariantManagerModal from "./ProductVariantManagerModal";
 
 interface ProductsTabProps {
   categories: Category[];
@@ -41,6 +42,7 @@ export default function ProductsTab({ categories, onUpdateProductStock, onAddPro
 
   // States Sửa sản phẩm
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [managingVariantsProduct, setManagingVariantsProduct] = useState<Product | null>(null);
   const [editProdName, setEditProdName] = useState("");
   const [editProdSlug, setEditProdSlug] = useState("");
   const [editProdPrice, setEditProdPrice] = useState(0);
@@ -198,7 +200,7 @@ export default function ProductsTab({ categories, onUpdateProductStock, onAddPro
     setEditProdStyle(product.style || "Modern");
     setEditProdMaterial(product.material);
     setEditProdStock(product.stock || 0);
-    setEditProdImage(product.images?.[0] || "");
+    setEditProdImage(product.images?.[0]?.url || "");
     setEditProdStatus((product as any).status || "ACTIVE");
     setEditProdMetaTitle((product as any).metaTitle || "");
     setEditProdMetaDesc((product as any).metaDescription || "");
@@ -375,7 +377,7 @@ export default function ProductsTab({ categories, onUpdateProductStock, onAddPro
                       <td className="p-4 text-center font-mono text-gray-400">#{p.id}</td>
                       <td className="p-4">
                         <div className="w-10 h-10 rounded-lg bg-gray-200 overflow-hidden border border-gray-200 relative">
-                          <img src={p.images?.[0] || "https://placehold.co/100x100?text=No+Image"} alt="" className="w-full h-full object-cover" />
+                          <img src={p.images[0]?.url || "https://placehold.co/100x100?text=No+Image"} alt="" className="w-full h-full object-cover" />
                         </div>
                       </td>
                       <td className="p-4">
@@ -395,6 +397,9 @@ export default function ProductsTab({ categories, onUpdateProductStock, onAddPro
                       </td>
                       <td className="p-4 text-center">
                         <div className="flex items-center justify-center gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => setManagingVariantsProduct(p)} className="text-purple-600 hover:bg-purple-50 p-1.5 rounded cursor-pointer border border-transparent hover:border-purple-200" title="Quản lý màu & ảnh">
+                            <Palette className="w-4 h-4"/>
+                          </button>
                           <button onClick={() => openEditProductModal(p)} className="text-amber-600 hover:bg-amber-50 p-1.5 rounded cursor-pointer border border-transparent hover:border-amber-200"><Edit3 className="w-4 h-4"/></button>
                           <button onClick={() => handleDeleteAdminProduct(p.id)} className="text-red-500 hover:bg-red-50 p-1.5 rounded cursor-pointer border border-transparent hover:border-red-200"><Trash2 className="w-4 h-4"/></button>
                         </div>
@@ -480,6 +485,15 @@ export default function ProductsTab({ categories, onUpdateProductStock, onAddPro
             </form>
           </div>
         </div>
+      )}
+
+      {managingVariantsProduct && (
+        <ProductVariantManagerModal
+          productId={managingVariantsProduct.id}
+          productName={managingVariantsProduct.name}
+          onClose={() => setManagingVariantsProduct(null)}
+          onSaved={() => fetchPaginatedProducts()}
+        />
       )}
     </div>
   );

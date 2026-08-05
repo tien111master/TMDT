@@ -39,6 +39,11 @@ export default function ProductDetailModal({
   const [assembleService, setAssembleService] = useState(false);
   const [isAddedSuccess, setIsAddedSuccess] = useState(false);
 
+  const selectedVariant = product.variants?.find((v) => v.color === selectedColor);
+  const displayImages = selectedVariant
+    ? product.images.filter((img) => img.variantId === selectedVariant.id || img.variantId == null)
+    : product.images;
+
   // For 360 simulation
   const rotate360 = () => {
     let current = activeImageIndex;
@@ -125,7 +130,7 @@ export default function ProductDetailModal({
                 {/* Main viewport */}
                 <div className="relative aspect-square rounded-xl overflow-hidden bg-[#FAF6F0] border border-[#EADBC8]/60 flex items-center justify-center group mb-4">
                   <img
-                    src={product.images[activeImageIndex]}
+                    src={displayImages[activeImageIndex]?.url ?? product.images[0]?.url}
                     alt={`${product.name} perspective ${activeImageIndex + 1}`}
                     className="w-full h-full object-cover transition-all duration-700"
                     id="zoomable-preview-img"
@@ -157,14 +162,14 @@ export default function ProductDetailModal({
 
                 {/* Thumbnails */}
                 <div className="grid grid-cols-4 gap-2 mb-4">
-                  {product.images.map((img, i) => (
+                  {displayImages.map((img, i) => (
                     <button
-                      key={img}
+                      key={img.url + i}
                       onClick={() => setActiveImageIndex(i)}
                       className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${activeImageIndex === i ? "border-[#D4AF37] ring-1 ring-[#D4AF37]" : "border-transparent opacity-70 hover:opacity-100"
                         }`}
                     >
-                      <img src={img} alt="thumbnail" className="w-full h-full object-cover" />
+                      <img src={img.url} alt="thumbnail" className="w-full h-full object-cover" />
                     </button>
                   ))}
                 </div>
@@ -227,7 +232,7 @@ export default function ProductDetailModal({
                       {product.colors.map((color) => (
                         <button
                           key={color}
-                          onClick={() => setSelectedColor(color)}
+                          onClick={() => { setSelectedColor(color); setActiveImageIndex(0); }}
                           className={`px-3 py-1.5 text-xs rounded-full border transition-all ${selectedColor === color
                             ? "bg-[#5C4033] text-white border-[#5C4033] shadow-sm"
                             : "bg-white text-[#5C4033] border-[#EADBC8] hover:bg-[#FAF6F0]"

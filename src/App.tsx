@@ -308,8 +308,11 @@ const savedRole = sessionStorage.getItem("user_role");
 
     const mappedImages =
       item.productImages && item.productImages.length > 0
-        ? item.productImages.map((img: any) => img.imageUrl)
-        : ["https://images.unsplash.com/photo-1540518614846-7eded433c457?auto=format&fit=crop&q=80&w=800"];
+        ? item.productImages.map((img: any) => ({
+            url: img.imageUrl ?? img.ImageUrl,
+            variantId: img.variantId ?? img.VariantId ?? null,
+          }))
+        : [{ url: "https://images.unsplash.com/photo-1540518614846-7eded433c457?auto=format&fit=crop&q=80&w=800", variantId: null }];
 
     const currentPrice =
       variants.length > 0
@@ -347,6 +350,7 @@ const savedRole = sessionStorage.getItem("user_role");
       longDescription: item.description || item.Description || "",
       material: item.material || item.Material || "Gỗ tự nhiên cao cấp",
       dimensions: "Kích thước tiêu chuẩn",
+      variants: variants.map((v: any) => ({ id: v.id ?? v.Id, color: v.color ?? v.Color })),
       colors: variants.map((v: any) => v.color || v.Color).filter(Boolean) || ["Mặc định"],
       features: ["Bảo hành LuxeHome"],
       warranty: `${item.warrantyMonths || item.WarrantyMonths || 12} tháng`,
@@ -682,7 +686,7 @@ const savedRole = sessionStorage.getItem("user_role");
         warrantyMonths: parseInt(newProd.warranty) || 12,
         brand: newProd.brand,
         status: "Active",
-        images: newProd.images.map((imgUrl, index) => ({ imageUrl: imgUrl, isMain: index === 0, sortOrder: index })),
+        images: newProd.images.map((img, index) => ({ imageUrl: img.url, isMain: index === 0, sortOrder: index })),
         variants: newProd.colors.map(color => ({ color: color, currentPrice: newProd.price, status: "Active" })),
         initialStock: newProd.stock
       };
@@ -704,7 +708,7 @@ const savedRole = sessionStorage.getItem("user_role");
         category: newProd.category,
         categoryName: newProd.categoryName,
         style: createdProductFromDb.style || newProd.style,
-        images: createdProductFromDb.productImages?.map((img: any) => img.imageUrl) || newProd.images,
+        images: createdProductFromDb.productImages?.map((img: any) => ({ url: img.imageUrl, variantId: img.variantId ?? null })) || newProd.images,
         description: createdProductFromDb.shortDescription || newProd.description,
         longDescription: createdProductFromDb.description || newProd.longDescription,
         material: createdProductFromDb.material || newProd.material,
@@ -753,8 +757,8 @@ const savedRole = sessionStorage.getItem("user_role");
     };
 
     if (updatedProduct.images && updatedProduct.images.length > 0) {
-      payload.imageUrl = updatedProduct.images[0];
-    }
+    payload.imageUrl = updatedProduct.images[0].url;
+  }
 
     const response = await fetch(`${API_BASE_URL}/api/products/${updatedProduct.id}`, {
       method: 'PUT',

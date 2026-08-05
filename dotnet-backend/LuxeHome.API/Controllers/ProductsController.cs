@@ -17,6 +17,197 @@ public class ProductsController : ControllerBase
         _cloudinaryService = cloudinaryService;
     }
 
+    
+
+    [HttpGet("category-counts")]
+    public async Task<IActionResult> GetCategoryCounts()
+    {
+        var counts = await _context.Products
+            .Where(p => p.Status != "INACTIVE" && p.CategoryId != null)
+            .GroupBy(p => p.Category!.Slug)
+            .Select(g => new { Slug = g.Key, Count = g.Count() })
+            .ToListAsync();
+
+        return Ok(counts);
+    }
+
+    // ==========================================================================
+    // COPY TOÀN BỘ ĐOẠN DƯỚI ĐÂY, DÁN VÀO BÊN TRONG class ProductsController
+    // (đặt sau action GetCategoryCounts() là hợp lý nhất)
+    // KHÔNG xoá bất kỳ action nào đang có sẵn trong ProductsController.cs
+    // ==========================================================================
+
+    // DTO trả về danh sách màu (variant) + ảnh + tồn kho của 1 sản phẩm
+    public class VariantDto
+    {
+        public long Id { get; set; }
+        public string? Color { get; set; }
+        public decimal? CurrentPrice { get; set; }
+        public string? Sku { get; set; }
+        public string? Status { get; set; }
+        public string? ImageUrl { get; set; }
+        public int Stock { get; set; }
+    }
+
+    // GET /api/products/{id}/variants
+    // Lấy toàn bộ màu (variant) + ảnh riêng từng màu của 1 sản phẩm, để hiển thị trong modal quản lý màu
+    [HttpGet("{id}/variants")]
+    public async Task<IActionResult> GetProductVariants(long id)
+    {
+        var variants = await _context.ProductVariants
+            .Where(v => v.ProductId == id)
+            .Select(v => new VariantDto
+            {
+                Id = v.Id,
+                Color = v.Color,
+                CurrentPrice = v.CurrentPrice,
+                Sku = v.Sku,
+                Status = v.Status,
+                ImageUrl = _context.ProductImages
+                    .Where(img => img.VariantId == v.Id)
+                    .Select(img => img.ImageUrl)
+                    .FirstOrDefault(),
+                Stock = _context.InventoryStocks
+                    .Where(s => s.VariantId == v.Id)
+                    .Sum(s => (int?)s.QuantityAvailable) ?? 0
+            })
+            .ToListAsync();
+
+        return Ok(variants);
+    }
+
+    // DTO nhận dữ liệu khi thêm 1 màu mới
+    public class CreateVariantDto
+    {
+        public string Color { get; set; } = "";
+        public decimal CurrentPrice { get; set; }
+        public string? ImageUrl { get; set; }
+        public int InitialStock { get; set; } = 0;
+    }
+
+    // POST /api/products/{id}/variants
+    // Thêm 1 màu mới cho sản phẩm đã có sẵn, kèm ảnh riêng (nếu có) và tồn kho ban đầu
+    [HttpPost("{id}/variants")]
+    public async Task<IActionResult> AddProductVariant(long id, [FromBody] CreateVariantDto dto)
+    {
+        var product = await _context.Products.FindAsync(id);
+        if (product == null) return NotFound(new { message = "Không tìm thấy sản phẩm." });
+
+        if (string.IsNullOrWhiteSpace(dto.Color))
+            return BadRequest(new { message = "Vui lòng nhập tên màu." });
+
+        var exists = await _context.ProductVariants.AnyAsync(v => v.ProductId == id && v.Color == dto.Color);
+        if (exists) return BadRequest(new { message = "Màu này đã tồn tại cho sản phẩm, không thể thêm trùng." });
+
+        var uniqueSuffix = Guid.NewGuid().ToString("N").Substring(0, 6).ToUpper();
+        var variant = new ProductVariant
+        {
+            ProductId = id,
+            Sku = $"{product.ProductCode}-{uniqueSuffix}",
+            VariantName = $"{product.ProductName} - {dto.Color}",
+            Color = dto.Color,
+            CurrentPrice = dto.CurrentPrice,
+            Status = "ACTIVE"
+        };
+        _context.ProductVariants.Add(variant);
+        await _context.SaveChangesAsync(); // cần Id của variant trước khi gắn ảnh/tồn kho
+
+        if (!string.IsNullOrEmpty(dto.ImageUrl))
+        {
+            _context.ProductImages.Add(new ProductImage
+            {
+                ProductId = id,
+                VariantId = variant.Id,
+                ImageUrl = dto.ImageUrl,
+                AltText = variant.VariantName,
+                IsMain = false
+            });
+        }
+
+        _context.InventoryStocks.Add(new InventoryStock
+        {
+            ProductId = id,
+            VariantId = variant.Id,
+            QuantityAvailable = dto.InitialStock,
+            QuantityOnHand = dto.InitialStock,
+            QuantityReserved = 0,
+            MinStockLevel = 5,
+            StockStatus = "IN_STOCK",
+            UpdatedAt = DateTime.UtcNow
+        });
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new { id = variant.Id, message = "Đã thêm màu mới thành công." });
+    }
+
+    // DTO nhận dữ liệu khi sửa 1 màu đã có (đổi tên màu / giá / ảnh)
+    public class UpdateVariantDto
+    {
+        public string? Color { get; set; }
+        public decimal? CurrentPrice { get; set; }
+        public string? ImageUrl { get; set; }
+    }
+
+    // PUT /api/products/variants/{variantId}
+    // Sửa thông tin 1 màu cụ thể (không cần biết productId vì variantId đã đủ định danh duy nhất)
+    [HttpPut("variants/{variantId}")]
+    public async Task<IActionResult> UpdateProductVariant(long variantId, [FromBody] UpdateVariantDto dto)
+    {
+        var variant = await _context.ProductVariants.FindAsync(variantId);
+        if (variant == null) return NotFound(new { message = "Không tìm thấy biến thể màu này." });
+
+        if (!string.IsNullOrWhiteSpace(dto.Color)) variant.Color = dto.Color;
+        if (dto.CurrentPrice.HasValue) variant.CurrentPrice = dto.CurrentPrice;
+
+        if (dto.ImageUrl != null)
+        {
+            var img = await _context.ProductImages.FirstOrDefaultAsync(i => i.VariantId == variantId);
+            if (img != null)
+            {
+                img.ImageUrl = dto.ImageUrl;
+            }
+            else
+            {
+                _context.ProductImages.Add(new ProductImage
+                {
+                    ProductId = variant.ProductId,
+                    VariantId = variantId,
+                    ImageUrl = dto.ImageUrl,
+                    AltText = variant.VariantName,
+                    IsMain = false
+                });
+            }
+        }
+
+        await _context.SaveChangesAsync();
+        return Ok(new { message = "Đã cập nhật biến thể màu." });
+    }
+
+    // DELETE /api/products/variants/{variantId}
+    // Xoá 1 màu (kèm ảnh + tồn kho gắn với màu đó). Không cho xoá nếu đây là màu cuối cùng của sản phẩm.
+    [HttpDelete("variants/{variantId}")]
+    public async Task<IActionResult> DeleteProductVariant(long variantId)
+    {
+        var variant = await _context.ProductVariants.FindAsync(variantId);
+        if (variant == null) return NotFound(new { message = "Không tìm thấy biến thể màu này." });
+
+        var remainingCount = await _context.ProductVariants.CountAsync(v => v.ProductId == variant.ProductId);
+        if (remainingCount <= 1)
+            return BadRequest(new { message = "Sản phẩm phải có ít nhất 1 màu, không thể xoá màu cuối cùng." });
+
+        var images = _context.ProductImages.Where(i => i.VariantId == variantId);
+        _context.ProductImages.RemoveRange(images);
+
+        var stocks = _context.InventoryStocks.Where(s => s.VariantId == variantId);
+        _context.InventoryStocks.RemoveRange(stocks);
+
+        _context.ProductVariants.Remove(variant);
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Đã xoá màu thành công." });
+    }
+
     [HttpGet]
     public async Task<IActionResult> GetProducts(
         [FromQuery] int page = 1, 
@@ -101,9 +292,13 @@ public class ProductsController : ControllerBase
                     CategoryName = p.Category.CategoryName
                 } : null,
                 ProductImages = p.ProductImages
-                    .OrderBy(img => img.SortOrder)
-                    .Select(img => new ProductImageDto { ImageUrl = img.ImageUrl })
-                    .ToList(),
+                .OrderBy(img => img.SortOrder)
+                .Select(img => new ProductImageDto
+                {
+                    ImageUrl = img.ImageUrl,
+                    VariantId = img.VariantId
+                })
+                .ToList(),
                 ProductVariants = p.ProductVariants
                     .Select(v => new ProductVariantDto 
                     { 
@@ -162,6 +357,7 @@ public class ProductsController : ControllerBase
                 product.ProductImages = dto.Images.Select(img => new ProductImage
                 {
                     ImageUrl = img.ImageUrl,
+                    VariantId = img.VariantId,
                     IsMain = img.IsMain,
                     SortOrder = img.SortOrder
                 }).ToList();

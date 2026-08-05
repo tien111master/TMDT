@@ -11,7 +11,6 @@ namespace LuxeHome.Application.DTOs
         public string Material { get; set; }
         public int? WarrantyMonths { get; set; }
 
-        // Giữ cả 3 tên field để không phá code frontend của bất kỳ ai đang đọc field nào
         public int StockQuantity { get; set; }
         public int Stock { get; set; }
         public int TotalStock { get; set; }
@@ -28,11 +27,6 @@ namespace LuxeHome.Application.DTOs
     {
         public string Slug { get; set; }
         public string CategoryName { get; set; }
-    }
-
-    public class ProductImageDto
-    {
-        public string ImageUrl { get; set; }
     }
 
     public class ProductVariantDto

@@ -368,7 +368,7 @@ export default function ChatbotWidget({ products, onSelectProduct }: ChatbotWidg
                           title="Click để bừng mở xem chi tiết tác phẩm"
                         >
                           <img
-                            src={prod.images[0]}
+                            src={prod.images[0]?.url}
                             alt={prod.name}
                             className="w-full h-20 object-cover border-b border-[#EADBC8]"
                           />
