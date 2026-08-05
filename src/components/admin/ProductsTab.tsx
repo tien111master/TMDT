@@ -125,20 +125,24 @@ export default function ProductsTab({ categories, onUpdateProductStock, onAddPro
         
         const rawItems = data.items || data.Items || [];
         const mapped = rawItems.map((item: any) => ({
-          id: item.id.toString(),
-          name: item.productName,
-          slug: item.slug || item.productName.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, ''),
-          price: item.productVariants?.[0]?.currentPrice || 0,
-          category: item.category?.slug || "khac",
-          categoryName: item.category?.categoryName || "Khác",
-          style: item.style || "Modern",
-          material: item.material || "",
-          stock: item.stockQuantity ?? 0,
-          images: item.productImages?.map((i:any)=>i.imageUrl) || [],
-          status: item.status || "ACTIVE",
-          metaTitle: item.metaTitle || "",
-          metaDescription: item.metaDescription || "",
-        })) as Product[];
+        id: item.id.toString(),
+        name: item.productName,
+        slug: item.slug || item.productName.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, ''),
+        price: item.productVariants?.[0]?.currentPrice || 0,
+        category: item.category?.slug || "khac",
+        categoryName: item.category?.categoryName || "Khác",
+        style: item.style || "Modern",
+        material: item.material || "",
+        stock: item.stockQuantity ?? 0,
+        images: item.productImages?.map((i: any) => ({
+          url: i.imageUrl ?? i.ImageUrl,
+          variantId: i.variantId ?? i.VariantId ?? null,
+        })) || [],
+        variantsCount: item.productVariants?.length || 0,   // MỚI
+        status: item.status || "ACTIVE",
+        metaTitle: item.metaTitle || "",
+        metaDescription: item.metaDescription || "",
+      })) as Product[];
         setAdminProducts(mapped);
       }
     } catch (err) {
@@ -393,8 +397,24 @@ export default function ProductsTab({ categories, onUpdateProductStock, onAddPro
                       </td>
                       <td className="p-4 text-right font-bold text-[#D4AF37]">{formattedPrice(p.price)}</td>
                       <td className="p-4 text-center">
-                        <input type="number" value={p.stock} disabled={isInactive} onChange={(e) => onUpdateProductStock(p.id, Number(e.target.value))} className="w-16 border border-gray-200 text-center rounded p-1 focus:border-[#D4AF37] focus:outline-none disabled:bg-gray-100 disabled:text-gray-400" />
-                      </td>
+                      <input
+                        type="number"
+                        value={p.stock}
+                        disabled={isInactive || (p as any).variantsCount > 1}
+                        onChange={(e) => onUpdateProductStock(p.id, Number(e.target.value))}
+                        className="w-16 border border-gray-200 text-center rounded p-1 focus:border-[#D4AF37] focus:outline-none disabled:bg-gray-100 disabled:text-gray-400"
+                        title={
+                          (p as any).variantsCount > 1
+                            ? 'Sản phẩm có nhiều màu — chỉnh tồn kho trong "Quản lý màu"'
+                            : ''
+                        }
+                      />
+                      {(p as any).variantsCount > 1 && (
+                        <span className="block text-[9px] text-gray-400 mt-0.5">
+                          Xem "Quản lý màu"
+                        </span>
+                      )}
+                    </td>
                       <td className="p-4 text-center">
                         <div className="flex items-center justify-center gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
                           <button onClick={() => setManagingVariantsProduct(p)} className="text-purple-600 hover:bg-purple-50 p-1.5 rounded cursor-pointer border border-transparent hover:border-purple-200" title="Quản lý màu & ảnh">

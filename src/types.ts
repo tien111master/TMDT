@@ -22,7 +22,7 @@ export interface Product {
   material: string;
   dimensions: string;
   colors: string[];
-  variants?: { id: number; color: string }[]; // Danh sách biến thể (id + màu) để đối chiếu ảnh theo variantId
+  variants?: { id: number; color: string; stock: number }[]; // Danh sách biến thể (id + màu + tồn kho riêng) để đối chiếu ảnh & tồn kho theo variantId
   features: string[];
   warranty: string;
   stock: number;

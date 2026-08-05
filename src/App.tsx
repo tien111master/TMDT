@@ -350,7 +350,13 @@ const savedRole = sessionStorage.getItem("user_role");
       longDescription: item.description || item.Description || "",
       material: item.material || item.Material || "Gỗ tự nhiên cao cấp",
       dimensions: "Kích thước tiêu chuẩn",
-      variants: variants.map((v: any) => ({ id: v.id ?? v.Id, color: v.color ?? v.Color })),
+      variants: variants.map((v: any) => ({
+        id: v.id ?? v.Id,
+        color: v.color ?? v.Color,
+        stock: Number(
+          v.stockQuantity ?? v.StockQuantity ?? v.stock ?? v.Stock ?? 0
+        ),
+      })),
       colors: variants.map((v: any) => v.color || v.Color).filter(Boolean) || ["Mặc định"],
       features: ["Bảo hành LuxeHome"],
       warranty: `${item.warrantyMonths || item.WarrantyMonths || 12} tháng`,

@@ -147,6 +147,7 @@ public class ProductsController : ControllerBase
         public string? Color { get; set; }
         public decimal? CurrentPrice { get; set; }
         public string? ImageUrl { get; set; }
+        public int? Stock { get; set; }
     }
 
     // PUT /api/products/variants/{variantId}
@@ -155,10 +156,14 @@ public class ProductsController : ControllerBase
     public async Task<IActionResult> UpdateProductVariant(long variantId, [FromBody] UpdateVariantDto dto)
     {
         var variant = await _context.ProductVariants.FindAsync(variantId);
-        if (variant == null) return NotFound(new { message = "Không tìm thấy biến thể màu này." });
+        if (variant == null)
+            return NotFound(new { message = "Không tìm thấy biến thể màu này." });
 
-        if (!string.IsNullOrWhiteSpace(dto.Color)) variant.Color = dto.Color;
-        if (dto.CurrentPrice.HasValue) variant.CurrentPrice = dto.CurrentPrice;
+        if (!string.IsNullOrWhiteSpace(dto.Color))
+            variant.Color = dto.Color;
+
+        if (dto.CurrentPrice.HasValue)
+            variant.CurrentPrice = dto.CurrentPrice;
 
         if (dto.ImageUrl != null)
         {
@@ -176,6 +181,34 @@ public class ProductsController : ControllerBase
                     ImageUrl = dto.ImageUrl,
                     AltText = variant.VariantName,
                     IsMain = false
+                });
+            }
+        }
+
+        // Thêm đoạn này
+        if (dto.Stock.HasValue)
+        {
+            var stockRecord = await _context.InventoryStocks
+                .FirstOrDefaultAsync(s => s.VariantId == variantId);
+
+            if (stockRecord != null)
+            {
+                stockRecord.QuantityAvailable = dto.Stock.Value;
+                stockRecord.QuantityOnHand = dto.Stock.Value;
+                stockRecord.UpdatedAt = DateTime.UtcNow;
+            }
+            else
+            {
+                _context.InventoryStocks.Add(new InventoryStock
+                {
+                    ProductId = variant.ProductId,
+                    VariantId = variantId,
+                    QuantityAvailable = dto.Stock.Value,
+                    QuantityOnHand = dto.Stock.Value,
+                    QuantityReserved = 0,
+                    MinStockLevel = 5,
+                    StockStatus = "IN_STOCK",
+                    UpdatedAt = DateTime.UtcNow
                 });
             }
         }

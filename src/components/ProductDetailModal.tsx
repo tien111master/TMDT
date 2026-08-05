@@ -35,20 +35,29 @@ export default function ProductDetailModal({
   const [is360Active, setIs360Active] = useState(false);
   const [selectedColor, setSelectedColor] = useState(product.colors[0] || "Default");
   const [quantity, setQuantity] = useState(1);
-  const stock = Number(product.stock ?? 0);
   const [assembleService, setAssembleService] = useState(false);
   const [isAddedSuccess, setIsAddedSuccess] = useState(false);
 
   const selectedVariant = product.variants?.find((v) => v.color === selectedColor);
-  const displayImages = selectedVariant
-    ? product.images.filter((img) => img.variantId === selectedVariant.id || img.variantId == null)
-    : product.images;
 
-  // For 360 simulation
+  // Tồn kho phải theo biến thể (màu) đang chọn, không dùng tồn kho tổng của cả sản phẩm
+  const stock = Number(selectedVariant?.stock ?? product.stock ?? 0);
+
+  const variantOnlyImages = selectedVariant
+    ? product.images.filter((img) => img.variantId === selectedVariant.id)
+    : [];
+  // Ưu tiên ảnh riêng của biến thể; chỉ dùng ảnh chung (variantId null) khi biến thể chưa có ảnh riêng
+  const displayImages =
+    variantOnlyImages.length > 0
+      ? variantOnlyImages
+      : product.images.filter((img) => img.variantId == null);
+  const finalDisplayImages = displayImages.length > 0 ? displayImages : product.images;
+
+  // For 360 simulation — chỉ quay trong đúng bộ ảnh của biến thể đang hiển thị
   const rotate360 = () => {
     let current = activeImageIndex;
     const interval = setInterval(() => {
-      current = (current + 1) % product.images.length;
+      current = (current + 1) % finalDisplayImages.length;
       setActiveImageIndex(current);
     }, 250);
 
@@ -58,40 +67,50 @@ export default function ProductDetailModal({
   };
 
   const handleAddToCartClick = () => {
-  if (stock <= 0) {
-    alert("Sản phẩm này hiện đã hết hàng.");
-    return;
-  }
+    if (stock <= 0) {
+      alert("Sản phẩm này hiện đã hết hàng.");
+      return;
+    }
 
-  if (quantity > stock) {
-    alert(`Không thể thêm quá tồn kho. Sản phẩm này chỉ còn ${stock} sản phẩm.`);
-    setQuantity(stock);
-    return;
-  }
+    if (quantity > stock) {
+      alert(`Không thể thêm quá tồn kho. Sản phẩm này chỉ còn ${stock} sản phẩm.`);
+      setQuantity(stock);
+      return;
+    }
 
-  onAddToCart(product, quantity, selectedColor, assembleService);
-  setIsAddedSuccess(true);
-  setTimeout(() => setIsAddedSuccess(false), 2000);
-};
+    onAddToCart(product, quantity, selectedColor, assembleService);
+    setIsAddedSuccess(true);
+    setTimeout(() => setIsAddedSuccess(false), 2000);
+  };
+
   const handleChangeQuantity = (value: number) => {
-  if (stock <= 0) {
-    setQuantity(1);
-    return;
-  }
+    if (stock <= 0) {
+      setQuantity(1);
+      return;
+    }
 
-  if (value < 1) {
-    setQuantity(1);
-    return;
-  }
+    if (value < 1) {
+      setQuantity(1);
+      return;
+    }
 
-  if (value > stock) {
-    alert(`Sản phẩm này chỉ còn ${stock} sản phẩm trong kho.`);
-    setQuantity(stock);
-    return;
-  }
+    if (value > stock) {
+      alert(`Sản phẩm này chỉ còn ${stock} sản phẩm trong kho.`);
+      setQuantity(stock);
+      return;
+    }
 
-  setQuantity(value);
-};
+    setQuantity(value);
+  };
+
+  // Đổi màu -> đổi ảnh về đầu, và ép số lượng đang chọn về đúng tồn kho của màu mới
+  const handleSelectColor = (color: string) => {
+    setSelectedColor(color);
+    setActiveImageIndex(0);
+    const nextVariant = product.variants?.find((v) => v.color === color);
+    const nextStock = Number(nextVariant?.stock ?? product.stock ?? 0);
+    setQuantity((q) => (nextStock > 0 ? Math.min(q, nextStock) : 1));
+  };
 
   const formattedPrice = (price: number) => {
     return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(price);
@@ -130,7 +149,7 @@ export default function ProductDetailModal({
                 {/* Main viewport */}
                 <div className="relative aspect-square rounded-xl overflow-hidden bg-[#FAF6F0] border border-[#EADBC8]/60 flex items-center justify-center group mb-4">
                   <img
-                    src={displayImages[activeImageIndex]?.url ?? product.images[0]?.url}
+                    src={finalDisplayImages[activeImageIndex]?.url ?? product.images[0]?.url}
                     alt={`${product.name} perspective ${activeImageIndex + 1}`}
                     className="w-full h-full object-cover transition-all duration-700"
                     id="zoomable-preview-img"
@@ -162,7 +181,7 @@ export default function ProductDetailModal({
 
                 {/* Thumbnails */}
                 <div className="grid grid-cols-4 gap-2 mb-4">
-                  {displayImages.map((img, i) => (
+                  {finalDisplayImages.map((img, i) => (
                     <button
                       key={img.url + i}
                       onClick={() => setActiveImageIndex(i)}
@@ -182,7 +201,7 @@ export default function ProductDetailModal({
                   <span>Bảo hành thượng hạng: <strong>{product.warranty}</strong></span>
                 </div>
                 <div className="flex items-center justify-between text-xs text-[#8B7E74]">
-                  <span>Trạng thái hàng: <strong>{product.stock > 0 ? `Còn hàng (${product.stock} bộ)` : "Đặt trước"}</strong></span>
+                  <span>Trạng thái hàng: <strong>{stock > 0 ? `Còn hàng (${stock} bộ)` : "Đặt trước"}</strong></span>
                   <span>Chất liệu: <strong>{product.material.split(",")[0]}</strong></span>
                 </div>
               </div>
@@ -232,7 +251,7 @@ export default function ProductDetailModal({
                       {product.colors.map((color) => (
                         <button
                           key={color}
-                          onClick={() => { setSelectedColor(color); setActiveImageIndex(0); }}
+                          onClick={() => handleSelectColor(color)}
                           className={`px-3 py-1.5 text-xs rounded-full border transition-all ${selectedColor === color
                             ? "bg-[#5C4033] text-white border-[#5C4033] shadow-sm"
                             : "bg-white text-[#5C4033] border-[#EADBC8] hover:bg-[#FAF6F0]"
@@ -261,85 +280,85 @@ export default function ProductDetailModal({
               </div>
 
               {/* Action Buttons */}
-<div className="space-y-3">
-  <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
-    {/* Quantity + Stock */}
-    <div className="w-full sm:w-auto">
-      <div className="flex min-h-[48px] items-center justify-between overflow-hidden rounded-xl border border-[#EADBC8] bg-white">
-        <button
-          type="button"
-          disabled={quantity <= 1 || stock <= 0}
-          onClick={() => handleChangeQuantity(quantity - 1)}
-          className="h-full px-4 py-3 text-[#5C4033] hover:bg-[#FAF6F0] transition-colors font-bold disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          -
-        </button>
+              <div className="space-y-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
+                  {/* Quantity + Stock */}
+                  <div className="w-full sm:w-auto">
+                    <div className="flex min-h-[48px] items-center justify-between overflow-hidden rounded-xl border border-[#EADBC8] bg-white">
+                      <button
+                        type="button"
+                        disabled={quantity <= 1 || stock <= 0}
+                        onClick={() => handleChangeQuantity(quantity - 1)}
+                        className="h-full px-4 py-3 text-[#5C4033] hover:bg-[#FAF6F0] transition-colors font-bold disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        -
+                      </button>
 
-        <span className="min-w-[44px] px-3 text-center text-sm font-semibold text-[#1A1A1A]">
-          {quantity}
-        </span>
+                      <span className="min-w-[44px] px-3 text-center text-sm font-semibold text-[#1A1A1A]">
+                        {quantity}
+                      </span>
 
-        <button
-          type="button"
-          disabled={quantity >= stock || stock <= 0}
-          onClick={() => handleChangeQuantity(quantity + 1)}
-          className="h-full px-4 py-3 text-[#5C4033] hover:bg-[#FAF6F0] transition-colors font-bold disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          +
-        </button>
-      </div>
+                      <button
+                        type="button"
+                        disabled={quantity >= stock || stock <= 0}
+                        onClick={() => handleChangeQuantity(quantity + 1)}
+                        className="h-full px-4 py-3 text-[#5C4033] hover:bg-[#FAF6F0] transition-colors font-bold disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        +
+                      </button>
+                    </div>
 
-      <p className="mt-1 text-[11px] text-[#8B7E74] text-center sm:text-left">
-        Tồn kho:{" "}
-        <span className={stock > 0 ? "font-bold text-emerald-600" : "font-bold text-red-600"}>
-          {stock > 0 ? `${stock} sản phẩm` : "Hết hàng"}
-        </span>
-      </p>
-    </div>
+                    <p className="mt-1 text-[11px] text-[#8B7E74] text-center sm:text-left">
+                      Tồn kho:{" "}
+                      <span className={stock > 0 ? "font-bold text-emerald-600" : "font-bold text-red-600"}>
+                        {stock > 0 ? `${stock} sản phẩm` : "Hết hàng"}
+                      </span>
+                    </p>
+                  </div>
 
-    {/* Add to cart */}
-    <button
-      type="button"
-      onClick={handleAddToCartClick}
-      disabled={stock <= 0}
-      className={`min-h-[48px] flex-1 py-3 px-6 rounded-xl flex items-center justify-center gap-2 font-bold text-sm tracking-wide transition-all ${
-        isAddedSuccess
-          ? "bg-emerald-600 text-white"
-          : stock > 0
-            ? "bg-gradient-to-r from-[#5C4033] to-[#4A3B32] text-white hover:from-[#4A3B32] hover:to-[#3A2D25] shadow-md hover:shadow-lg"
-            : "bg-gray-300 text-gray-500 cursor-not-allowed"
-      }`}
-      id="add-to-cart-action-btn"
-    >
-      {isAddedSuccess ? (
-        <>
-          <Check className="w-5 h-5 animate-bounce" />
-          Đã Thêm Vào Giỏ!
-        </>
-      ) : stock > 0 ? (
-        <>
-          <Sparkles className="w-4 h-4 text-[#D4AF37]" />
-          Thêm Vào Giỏ Hàng
-        </>
-      ) : (
-        "Hết Hàng / Nhận Đặt Trước"
-      )}
-    </button>
-  </div>
+                  {/* Add to cart */}
+                  <button
+                    type="button"
+                    onClick={handleAddToCartClick}
+                    disabled={stock <= 0}
+                    className={`min-h-[48px] flex-1 py-3 px-6 rounded-xl flex items-center justify-center gap-2 font-bold text-sm tracking-wide transition-all ${
+                      isAddedSuccess
+                        ? "bg-emerald-600 text-white"
+                        : stock > 0
+                          ? "bg-gradient-to-r from-[#5C4033] to-[#4A3B32] text-white hover:from-[#4A3B32] hover:to-[#3A2D25] shadow-md hover:shadow-lg"
+                          : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    }`}
+                    id="add-to-cart-action-btn"
+                  >
+                    {isAddedSuccess ? (
+                      <>
+                        <Check className="w-5 h-5 animate-bounce" />
+                        Đã Thêm Vào Giỏ!
+                      </>
+                    ) : stock > 0 ? (
+                      <>
+                        <Sparkles className="w-4 h-4 text-[#D4AF37]" />
+                        Thêm Vào Giỏ Hàng
+                      </>
+                    ) : (
+                      "Hết Hàng / Nhận Đặt Trước"
+                    )}
+                  </button>
+                </div>
 
-  <button
-    onClick={() => onToggleCompare(product)}
-    className={`w-full py-2.5 px-4 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 border transition-all ${
-      isCompared
-        ? "bg-[#D4AF37]/10 text-[#D4AF37] border-[#D4AF37]"
-        : "bg-transparent text-[#5C4033] border-[#EADBC8] hover:bg-[#F4EBE1]"
-    }`}
-    id="add-to-compare-btn"
-  >
-    <Scale className="w-4 h-4" />
-    {isCompared ? "Đang so sánh" : "So Sánh Sản Phẩm"}
-  </button>
-</div>
+                <button
+                  onClick={() => onToggleCompare(product)}
+                  className={`w-full py-2.5 px-4 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 border transition-all ${
+                    isCompared
+                      ? "bg-[#D4AF37]/10 text-[#D4AF37] border-[#D4AF37]"
+                      : "bg-transparent text-[#5C4033] border-[#EADBC8] hover:bg-[#F4EBE1]"
+                  }`}
+                  id="add-to-compare-btn"
+                >
+                  <Scale className="w-4 h-4" />
+                  {isCompared ? "Đang so sánh" : "So Sánh Sản Phẩm"}
+                </button>
+              </div>
             </div>
 
           </div>

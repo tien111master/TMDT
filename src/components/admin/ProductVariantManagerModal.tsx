@@ -135,6 +135,7 @@ export default function ProductVariantManagerModal({
           color: variant.color,
           currentPrice: variant.currentPrice,
           imageUrl: variant.imageUrl,
+          stock: variant.stock,
         }),
       });
       if (!res.ok) {
@@ -298,10 +299,20 @@ export default function ProductVariantManagerModal({
                   />
                 </div>
 
-                {/* Tồn kho - chỉ hiển thị, sửa ở bảng chính */}
-                <div className="w-full sm:w-20 text-center">
-                  <label className="block text-[10px] font-bold text-[#8B7E74] uppercase mb-1">Tồn kho</label>
-                  <span className="text-xs font-bold text-[#5C4033]">{variant.stock}</span>
+                {/* Tồn kho - chỉnh trực tiếp tại đây */}
+                <div className="w-full sm:w-20">
+                <label className="block text-[10px] font-bold text-[#8B7E74] uppercase mb-1 text-center">Tồn kho</label>
+                <input
+                    type="number"
+                    min={0}
+                    value={variant.stock}
+                    onChange={(e) =>
+                    setVariants((prev) =>
+                        prev.map((v) => (v.id === variant.id ? { ...v, stock: Number(e.target.value) } : v))
+                    )
+                    }
+                    className="w-full border border-[#EADBC8] p-2 rounded-lg text-xs text-center focus:outline-none focus:ring-1 focus:ring-[#D4AF37]"
+                />
                 </div>
 
                 {/* Actions */}
