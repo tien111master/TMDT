@@ -87,6 +87,7 @@ namespace LuxeHome.API.Controllers
         public async Task<IActionResult> VnPayReturn()
         {
             var query = Request.Query;
+            string frontendBaseUrl = (_config["Frontend:BaseUrl"] ?? "https://tmdt-plum.vercel.app").TrimEnd('/');
 
             if (!query.ContainsKey("vnp_SecureHash"))
             {
@@ -111,7 +112,7 @@ namespace LuxeHome.API.Controllers
             if (order == null)
             {
                 Console.WriteLine("Không tìm thấy đơn hàng với TxnRef: " + txnRef);
-                return Redirect("http://localhost:3000/checkout/fail?reason=order-not-found");
+                return Redirect($"{frontendBaseUrl}/checkout/fail?reason=order-not-found");
             }
 
             decimal vnpAmount = decimal.Parse(amountRaw, CultureInfo.InvariantCulture) / 100;
@@ -124,7 +125,7 @@ namespace LuxeHome.API.Controllers
 
                 await _db.SaveChangesAsync();
 
-                return Redirect("http://localhost:3000/checkout/fail?reason=invalid-amount");
+                return Redirect($"{frontendBaseUrl}/checkout/fail?reason=invalid-amount");
             }
 
             if (responseCode == "00")
@@ -135,7 +136,7 @@ namespace LuxeHome.API.Controllers
 
                 await _db.SaveChangesAsync();
 
-                return Redirect($"http://localhost:3000/checkout/success?orderId={txnRef}");
+                return Redirect($"{frontendBaseUrl}/checkout/success?orderId={txnRef}");
             }
 
             order.PaymentStatus = "FAILED";
@@ -143,7 +144,7 @@ namespace LuxeHome.API.Controllers
 
             await _db.SaveChangesAsync();
 
-            return Redirect($"http://localhost:3000/checkout/fail?orderId={txnRef}");
+            return Redirect($"{frontendBaseUrl}/checkout/fail?orderId={txnRef}");
         }
 
         [HttpGet("test-vnpay")]

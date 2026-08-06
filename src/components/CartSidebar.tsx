@@ -352,7 +352,7 @@ const handleRemovePromotion = () => {
                     className="flex gap-3 p-3 bg-[#FAF6F0] rounded-lg border border-[#EADBC8]"
                   >
                     <img
-                      src={item.product.images[0]}
+                      src={item.product.images[0]?.url || "https://placehold.co/100x100?text=No+Image"}
                       alt={item.product.name}
                       className="w-20 h-20 shrink-0 object-cover rounded"
                     />
