@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { MessageSquare, X, Send, Sparkles, Camera, Image, RotateCw, HelpCircle } from "lucide-react";
 import { Product } from "../types";
+import { API_BASE_URL } from "../api/api";
 
 interface ChatbotWidgetProps {
   products: Product[];
@@ -8,7 +9,7 @@ interface ChatbotWidgetProps {
 }
 
 // Danh sách từ khoá trong phạm vi tư vấn nội thất — dùng để chặn câu hỏi lạc đề
-// ở chế độ offline (khi không gọi được API backend/Gemini).
+// CHỈ khi không kết nối được backend (chế độ offline dự phòng cuối cùng).
 const FURNITURE_SCOPE_KEYWORDS = [
   "sofa", "bàn", "ghế", "giường", "tủ", "nệm", "kệ", "đèn", "nội thất",
   "gỗ", "da bò", "da nappa", "vải", "nhung", "kính",
@@ -16,7 +17,6 @@ const FURNITURE_SCOPE_KEYWORDS = [
   "giao hàng", "bảo hành", "đổi trả", "thanh toán", "giá", "combo",
   "màu sắc", "kích thước", "chất liệu", "lắp đặt", "showroom", "đơn hàng",
   "tư vấn", "thiết kế", "trang trí", "phối cảnh", "vệ sinh", "bảo dưỡng",
-  "royal", "carrara", "velour", "aurora", "nordic", "milano", "prestige", "ergonomic",
 ];
 
 const isInScopeQuestion = (text: string): boolean => {
@@ -25,14 +25,17 @@ const isInScopeQuestion = (text: string): boolean => {
 };
 
 const OUT_OF_SCOPE_REPLY =
-  "Dạ, LuxeHome hiện chỉ chuyên tư vấn về các sản phẩm và giải pháp nội thất cao cấp trong showroom của mình. Rất tiếc em chưa thể hỗ trợ câu hỏi này ạ! Anh/Chị có cần tư vấn thêm về nội thất không ạ?";
+  "Dạ, LuxeHome hiện chỉ chuyên tư vấn về các sản phẩm và giải pháp nội thất trong showroom của mình. Rất tiếc em chưa thể hỗ trợ câu hỏi này ạ! Anh/Chị có cần tư vấn thêm về nội thất không ạ?";
+
+const CONNECTION_ERROR_REPLY =
+  "Dạ, hệ thống tư vấn của LuxeHome đang tạm gián đoạn kết nối, Anh/Chị vui lòng thử lại sau ít phút hoặc liên hệ trực tiếp showroom giúp em ạ. Xin lỗi Anh/Chị vì sự bất tiện này!";
 
 export default function ChatbotWidget({ products, onSelectProduct }: ChatbotWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<{ role: "user" | "model"; content: string }[]>([
     {
       role: "model",
-      content: "Kính chào Quý khách! Em là LuxeHome Concierge, trợ lý nội thất được đào tạo bởi mô hình AI Gemini. Em có thể tư vấn phối màu champagne gold, tính diện tích đặt combo phòng khách, hay gợi ý nội thất Óc chó theo ngân sách của Anh/Chị. Rất vinh hạnh được hỗ trợ!"
+      content: "Kính chào Quý khách! Em là trợ lý tư vấn của LuxeHome. Anh/Chị cứ hỏi em về sản phẩm, giá cả, tồn kho, chính sách giao hàng/bảo hành, hoặc nhờ em gợi ý nội thất theo ngân sách và phong cách mong muốn ạ!"
     }
   ]);
   const [inputValue, setInputValue] = useState("");
@@ -51,67 +54,28 @@ export default function ChatbotWidget({ products, onSelectProduct }: ChatbotWidg
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
-  const getSmartOfflineTextFallback = (userInput: string): string => {
-    const input = userInput.toLowerCase();
-
-    // Chặn câu hỏi ngoài phạm vi nội thất LuxeHome ngay cả ở chế độ offline
+  // Chỉ dùng khi KHÔNG kết nối được backend chút nào (network chết hẳn) —
+  // không còn là nơi "giả vờ AI", chỉ báo lỗi kết nối thật + chặn lạc đề cơ bản.
+  const getOfflineFallback = (userInput: string): string => {
     if (!isInScopeQuestion(userInput)) {
       return OUT_OF_SCOPE_REPLY;
     }
-    
-    if (input.includes("sofa") || input.includes("royal") || input.includes("signature") || input.includes("phòng khách")) {
-      return "Dạ, LuxeHome nhận thấy Anh/Chị đang quan tâm đến nội thất tiếp khách sang tươm. Em khuyên dùng tuyệt phẩm Sofa giường góc độc kiêu 'Sofa Da Bò Ý Tự Nhiên - Royal Signature' bọc da Full Grain cao sang tột bực.";
-    }
-    if (input.includes("bàn trà") || input.includes("carrara") || input.includes("venice") || input.includes("đá")) {
-      return "Dạ, mẫu 'Bàn Trà Đá Cẩm Thạch Carrara - Venice Golden Frame' mạ titan vàng champagne óng ánh chính là sự kết hợp tối linh với sofa luxury căn phòng khách gia chủ.";
-    }
-    if (input.includes("giường") || input.includes("phòng ngủ") || input.includes("velour") || input.includes("nhung")) {
-      return "Để phòng ngủ Master đạt độ tĩnh mịch, em trân trọng tiến cử 'Giường Ngủ Hoàng Gia Master - Silk King Velour' uốn lượn thướt tha bọc nhung tơ lụa mịn ngọt đêm dài.";
-    }
-    if (input.includes("tủ") || input.includes("áo") || input.includes("kính") || input.includes("aurora")) {
-      return "Dạ, 'Tủ Quần Áo Âm Tường Kính Cường Lực - Aurora Clear Lux' cánh xám mờ tiệm dốc LED sẽ phô diễn trọn vẹn bộ sưu tập thời trang xa xỉ rạng rỡ của gia đình.";
-    }
-    if (input.includes("bàn ăn") || input.includes("sồi") || input.includes("dining") || input.includes("bếp")) {
-      return "Trong không gian phòng ăn đầm ấm, 'Bàn Ăn Gỗ Sồi Chun Tự Nhiên - Nordic Organic Dining' uốn sớ cạnh mộc mạc châu Âu sẽ làm bừng sáng bữa cơm sum vầy.";
-    }
-    if (input.includes("ghế") && (input.includes("ăn") || input.includes("nappa") || input.includes("milano"))) {
-      return "Dạ, tác phẩm 'Ghế Ăn Thư Giãn Bọc Da Nappa - Milano Curve' mút lông vũ êm sâu, ôm gọn thắt lưng chính là tri kỷ của bàn ăn sồi ngọc sồi ngọc nhà mình.";
-    }
-    if (input.includes("làm việc") || input.includes("prestige") || input.includes("giám đốc") || input.includes("văn phòng")) {
-      return "Kiến tạo phong khí bệ vệ quyền lực của sếp chỉ huy thông qua 'Bàn Làm Việc Giám Đốc Cao Cấp - Executive Prestige' gỗ Óc chó sang trọng, phối da thuộc thảo mộc.";
-    }
-    if (input.includes("công thái học") || input.includes("ergonomic") || input.includes("đau lưng") || input.includes("mỏi cổ")) {
-      return "Để xoa dịu mệt mỏi văn phòng, 'Ghế Công Thái Học Luxury - Ergonomic Masterpiece' sườn lưới Đức thoáng đãng, bệ đỡ 4D chỉnh 5 hướng chính là giải pháp tối ưu cho quý khách.";
-    }
-    
-    return "LuxeHome chân thành cảm ơn tâm sự của Anh/Chị! Em gửi ý kiến đề xuất các dòng Sofa da bò tót Ý, Bàn trà Carrara sáng, hay Giường Master nhung để quý khách lựa chọn trang hoàng dinh thự thanh lịch của mình.";
+    return CONNECTION_ERROR_REPLY;
   };
 
   const findMatchingProducts = (text: string): Product[] => {
     const input = text.toLowerCase();
     const matches: Product[] = [];
-    
+
     products.forEach((p) => {
       const nameLower = p.name.toLowerCase();
-      const keywords: string[] = [];
-      if (p.id === "prod-01" || p.id === "1") keywords.push("sofa", "royal", "signature", "phòng khách", "ghế dài", "da bò");
-      if (p.id === "prod-02" || p.id === "2") keywords.push("bàn trà", "carrara", "venice", "bàn kính", "đá cẩm thạch");
-      if (p.id === "prod-03" || p.id === "3") keywords.push("giường", "velour", "phòng ngủ", "nệm", "hoàng gia master");
-      if (p.id === "prod-04" || p.id === "4") keywords.push("tủ quần áo", "tủ áo", "clear lux", "tủ kính", "âm tường");
-      if (p.id === "prod-05" || p.id === "5") keywords.push("bàn ăn", "gỗ sồi", "nordic", "bàn ăn sồi", "organic dining");
-      if (p.id === "prod-06" || p.id === "6") keywords.push("ghế ăn", "nappa", "milano", "thư giãn");
-      if (p.id === "prod-07" || p.id === "7") keywords.push("bàn làm việc", "giám đốc", "prestige", "bàn giám đốc", "óc chó");
-      if (p.id === "prod-08" || p.id === "8") keywords.push("công thái học", "ergonomic", "mỏi cổ", "ghế xoay", "lưới dệt");
-
-      const matchByKeyword = keywords.some(kw => input.includes(kw));
       const matchByName = nameLower.split(/[\s-]+/).some(word => word.length > 2 && input.includes(word));
-      
-      if (matchByKeyword || matchByName) {
+      if (matchByName) {
         matches.push(p);
       }
     });
 
-    return matches;
+    return matches.slice(0, 4);
   };
 
   const handleSendMessage = async (text: string) => {
@@ -123,7 +87,9 @@ export default function ChatbotWidget({ products, onSelectProduct }: ChatbotWidg
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/chat", {
+      // QUAN TRỌNG: phải gọi đúng domain backend (API_BASE_URL), không dùng path tương đối
+      // vì frontend và backend nằm ở 2 domain khác nhau.
+      const response = await fetch(`${API_BASE_URL}/api/Chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -134,18 +100,21 @@ export default function ChatbotWidget({ products, onSelectProduct }: ChatbotWidg
         })
       });
 
+      if (!response.ok) {
+        throw new Error(`Backend chat API trả về lỗi ${response.status}`);
+      }
+
       const data = await response.json();
+
+      if (!data || typeof data.text !== "string" || !data.text.trim()) {
+        throw new Error("Backend không trả về nội dung trả lời hợp lệ.");
+      }
+
       setMessages(prev => [...prev, { role: "model", content: data.text }]);
     } catch (err) {
-      // Trigger our smart offline rule-based responder
-      const offlineReply = getSmartOfflineTextFallback(text);
-      setMessages(prev => [
-        ...prev,
-        {
-          role: "model",
-          content: `${offlineReply}\n\n*(Lưu ý: Hệ thống đang phản hồi ở chế độ thông minh tối ưu cục bộ)*`
-        }
-      ]);
+      console.error("Lỗi gọi chatbot API:", err);
+      const offlineReply = getOfflineFallback(text);
+      setMessages(prev => [...prev, { role: "model", content: offlineReply }]);
     } finally {
       setIsLoading(false);
     }
@@ -162,7 +131,7 @@ export default function ChatbotWidget({ products, onSelectProduct }: ChatbotWidg
     const reader = new FileReader();
     reader.onloadend = async () => {
       const base64String = reader.result as string;
-      
+
       // Show user mock action
       setMessages(prev => [
         ...prev,
@@ -170,14 +139,18 @@ export default function ChatbotWidget({ products, onSelectProduct }: ChatbotWidg
       ]);
 
       try {
-        const response = await fetch("/api/image-search", {
+        const response = await fetch(`${API_BASE_URL}/api/image-search`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ imageBase64: base64String })
         });
 
+        if (!response.ok) {
+          throw new Error(`Backend image-search API trả về lỗi ${response.status}`);
+        }
+
         const data = await response.json();
-        
+
         let reply = `🔮 **Kết quả phân tích hình ảnh AI:**\n\n`;
         if (data.detectedStyle) {
           reply += `• **Phong cách phát hiện:** ${data.detectedStyle}\n`;
@@ -200,7 +173,7 @@ export default function ChatbotWidget({ products, onSelectProduct }: ChatbotWidg
             const pName = p.name.toLowerCase();
             const matchedName = data.matchedProductName.toLowerCase();
             if (pName.includes(matchedName) || matchedName.includes(pName)) return true;
-            
+
             // split words, if at least 2 key words of length > 2 intersect, count as matched!
             const pWords = pName.split(/[\s-]+/).filter((w: string) => w.length > 2);
             const mWords = matchedName.split(/[\s-]+/).filter((w: string) => w.length > 2);
@@ -225,6 +198,7 @@ export default function ChatbotWidget({ products, onSelectProduct }: ChatbotWidg
         }
 
       } catch (err) {
+        console.error("Lỗi phân tích ảnh:", err);
         setMessages(prev => [
           ...prev,
           { role: "model", content: "Thử phân tích hình ảnh thất bại. Anh/Chị vui lòng chụp ảnh rõ nét hơn hoặc thử lại sau ít phút!" }
@@ -253,7 +227,7 @@ export default function ChatbotWidget({ products, onSelectProduct }: ChatbotWidg
     <>
       {/* Floating Action Button */}
       <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3" id="floating-chatbot-bubble">
-        
+
         {/* Floating image upload action tool tip */}
         <button
           onClick={() => fileInputRef.current?.click()}
@@ -270,7 +244,7 @@ export default function ChatbotWidget({ products, onSelectProduct }: ChatbotWidg
           id="btn-chatbot-widget-open"
         >
           {isOpen ? <X className="w-6 h-6 animate-spin-once" /> : <MessageSquare className="w-6 h-6" />}
-          
+
           {!isOpen && (
             <span className="absolute -top-1.5 -right-1.5 bg-[#D4AF37] text-white text-[9px] font-bold px-2 py-0.5 rounded-full tracking-wider animate-pulse">
               AI CONCIERGE
@@ -291,7 +265,7 @@ export default function ChatbotWidget({ products, onSelectProduct }: ChatbotWidg
 
       {/* Chat Window Popup */}
       {isOpen && (
-        <div 
+        <div
           className="fixed bottom-24 right-6 w-96 max-w-[calc(100vw-2rem)] h-[540px] bg-[#FAF6F0] rounded-2xl shadow-2xl border border-[#EADBC8] overflow-hidden flex flex-col z-50 animate-fade-in"
           id="chatbot-display-window"
         >
@@ -302,15 +276,15 @@ export default function ChatbotWidget({ products, onSelectProduct }: ChatbotWidg
                 <Sparkles className="w-5 h-5 text-[#D4AF37] animate-pulse" />
               </div>
               <div>
-                <h3 className="font-serif text-sm font-bold tracking-wide">Trợ Lý LuxeHome AI</h3>
+                <h3 className="font-serif text-sm font-bold tracking-wide">Trợ Lý LuxeHome</h3>
                 <span className="text-[10px] text-[#EADBC8] flex items-center gap-1">
                   <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping"></span>
-                  Gợi ý & Phối cảnh nội thất Luxury
+                  Tư vấn nội thất trực tuyến
                 </span>
               </div>
             </div>
-            
-            <button 
+
+            <button
               onClick={() => setIsOpen(false)}
               className="text-[#EADBC8] hover:text-white transition-colors"
             >
@@ -322,17 +296,17 @@ export default function ChatbotWidget({ products, onSelectProduct }: ChatbotWidg
           <div className="bg-[#5C4033]/5 px-3 py-2 border-b border-[#EADBC8] text-[11px] text-[#5C4033] flex items-center justify-between font-medium">
             <span className="flex items-center gap-1"><HelpCircle className="w-3.5 h-3.5 text-[#D4AF37]" /> Hãy đặt câu hỏi bất kì:</span>
             <div className="flex gap-1.5">
-              <button 
-                onClick={() => handleShortcutClick("Gấp: Gợi ý combo phòng khách dưới 80 triệu?")} 
+              <button
+                onClick={() => handleShortcutClick("Gợi ý combo phòng khách dưới 80 triệu?")}
                 className="bg-white px-2 py-0.5 rounded text-[10px] text-[#5C4033] border border-[#EADBC8] hover:bg-[#D4AF37]/10"
               >
                 Sofa & Bàn Trà
               </button>
-              <button 
-                onClick={() => handleShortcutClick("Cách bảo dưỡng sofa da bò Ý chuẩn nhất?")} 
+              <button
+                onClick={() => handleShortcutClick("Cách bảo dưỡng sofa da bò chuẩn nhất?")}
                 className="bg-white px-2 py-0.5 rounded text-[10px] text-[#5C4033] border border-[#EADBC8] hover:bg-[#D4AF37]/10"
               >
-                Da bò Ý
+                Da bò
               </button>
             </div>
           </div>
@@ -354,7 +328,7 @@ export default function ChatbotWidget({ products, onSelectProduct }: ChatbotWidg
                       {msg.content}
                     </div>
                   </div>
-                  
+
                   {/* Matched product list from AI suggestion / keyword search */}
                   {matchedProds.length > 0 && (
                     <div className="pl-4 pr-1 flex gap-2.5 overflow-x-auto pb-2 scrollbar-none" id={`chat-matched-prods-${idx}`}>
@@ -365,7 +339,7 @@ export default function ChatbotWidget({ products, onSelectProduct }: ChatbotWidg
                             onSelectProduct(prod);
                           }}
                           className="flex-shrink-0 w-44 bg-white border border-[#EADBC8] rounded-xl overflow-hidden hover:border-[#D4AF37] transition-all cursor-pointer shadow-xs hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 text-left group"
-                          title="Click để bừng mở xem chi tiết tác phẩm"
+                          title="Click để xem chi tiết sản phẩm"
                         >
                           <img
                             src={prod.images[0]?.url}
@@ -380,7 +354,7 @@ export default function ChatbotWidget({ products, onSelectProduct }: ChatbotWidg
                               <span className="text-[9px] font-black text-[#5C4033]">
                                 {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(prod.price)}
                               </span>
-                              <span className="text-[8px] bg-[#FAF6F0] text-[#D4AF37] font-bold px-1.5 py-0.5 rounded border border-[#EADBC8] group-hover:bg-[#D4AF37] group-hover:text-white transition-colors animate-pulse">
+                              <span className="text-[8px] bg-[#FAF6F0] text-[#D4AF37] font-bold px-1.5 py-0.5 rounded border border-[#EADBC8] group-hover:bg-[#D4AF37] group-hover:text-white transition-colors">
                                 Xem
                               </span>
                             </div>
@@ -410,7 +384,7 @@ export default function ChatbotWidget({ products, onSelectProduct }: ChatbotWidg
               <div className="flex justify-start">
                 <div className="bg-white text-[#8B7E74] rounded-2xl p-3 shadow-sm border border-[#EADBC8] flex items-center gap-1.5 text-xs">
                   <RotateCw className="w-3.5 h-3.5 animate-spin text-[#D4AF37]" />
-                  LuxeHome Concierge đang soạn câu trả lời thiết kế...
+                  Đang soạn câu trả lời...
                 </div>
               </div>
             )}
@@ -420,9 +394,9 @@ export default function ChatbotWidget({ products, onSelectProduct }: ChatbotWidg
                 <div className="bg-amber-50 text-[#5C4033] rounded-2xl p-4 border border-[#EADBC8] flex flex-col gap-2 text-xs">
                   <span className="flex items-center gap-2 font-bold animate-pulse">
                     <Sparkles className="w-4 h-4 text-[#D4AF37]" />
-                    Đang gửi ảnh lên Máy chủ Để Phân Tích Gemini Vision...
+                    Đang phân tích hình ảnh...
                   </span>
-                  <p className="text-[10px] text-[#8B7E74] italic">AI của LuxeHome sẽ nhận diện khối, sắc độ, phong cách và tìm sản phẩm thích hợp trong xưởng.</p>
+                  <p className="text-[10px] text-[#8B7E74] italic">AI sẽ nhận diện khối, sắc độ, phong cách và tìm sản phẩm phù hợp trong showroom.</p>
                 </div>
               </div>
             )}
@@ -456,7 +430,7 @@ export default function ChatbotWidget({ products, onSelectProduct }: ChatbotWidg
               className="flex-1 bg-[#FAF6F0] border border-[#EADBC8]/70 rounded-full px-4 py-2.5 text-xs text-[#1A1A1A] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
               id="chatbot-text-input-field"
             />
-            
+
             <button
               type="submit"
               disabled={!inputValue.trim()}

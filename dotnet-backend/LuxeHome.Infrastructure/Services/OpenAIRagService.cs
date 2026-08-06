@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using LuxeHome.Domain.Entities;
 using System.Threading.Tasks;
 using LuxeHome.Domain.Interfaces;
 using Microsoft.Extensions.Configuration;
@@ -32,13 +35,19 @@ namespace LuxeHome.Infrastructure.Services
         private static string FirstNonEmpty(params string?[] values)
         {
             foreach (var v in values)
-                if (!string.IsNullOrWhiteSpace(v)) return v.Trim();
+                if (!string.IsNullOrWhiteSpace(v))
+                    return v.Trim();
+
             return string.Empty;
         }
 
         public bool IsOffline() => string.IsNullOrEmpty(_apiKey);
 
-        public async Task<string> GenerateReplyAsync(string userQuestion, string context, string systemInstruction)
+        public async Task<string> GenerateReplyAsync(
+            string userQuestion,
+            string context,
+            string systemInstruction,
+            List<Message>? history = null)
         {
             if (IsOffline())
                 throw new InvalidOperationException("OpenAI chưa cấu hình API key.");
@@ -47,23 +56,57 @@ namespace LuxeHome.Infrastructure.Services
                 ? userQuestion
                 : $"DỮ LIỆU THỰC TẾ (chỉ được dùng thông tin này, không được bịa thêm):\n{context}\n\nCÂU HỎI CỦA KHÁCH: {userQuestion}";
 
+            // Danh sách messages gửi lên OpenAI
+            var messageList = new List<object>
+            {
+                new { role = "system", content = systemInstruction }
+            };
+
+            // Giữ tối đa 6 lượt hội thoại gần nhất
+            if (history != null && history.Count > 0)
+            {
+                var recentHistory = history
+                    .Where(m => m.Role == "user" || m.Role == "model")
+                    .Skip(Math.Max(0, history.Count - 1 - 6))
+                    .Take(6);
+
+                foreach (var m in recentHistory)
+                {
+                    var role = m.Role == "model" ? "assistant" : "user";
+
+                    messageList.Add(new
+                    {
+                        role,
+                        content = m.Content
+                    });
+                }
+            }
+
+            // Thêm câu hỏi hiện tại
+            messageList.Add(new
+            {
+                role = "user",
+                content = userContent
+            });
+
             var payload = new
             {
                 model = _model,
-                messages = new object[]
-                {
-                    new { role = "system", content = systemInstruction },
-                    new { role = "user", content = userContent }
-                },
+                messages = messageList,
                 temperature = 0.5,
                 max_tokens = 400
             };
 
             var req = new HttpRequestMessage(HttpMethod.Post, Url);
             req.Headers.Add("Authorization", $"Bearer {_apiKey}");
-            req.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+
+            req.Content = new StringContent(
+                JsonSerializer.Serialize(payload),
+                Encoding.UTF8,
+                "application/json");
 
             var response = await _httpClient.SendAsync(req);
+
             if (!response.IsSuccessStatusCode)
             {
                 var err = await response.Content.ReadAsStringAsync();
@@ -71,6 +114,7 @@ namespace LuxeHome.Infrastructure.Services
             }
 
             var json = await response.Content.ReadAsStringAsync();
+
             using var doc = JsonDocument.Parse(json);
 
             var text = doc.RootElement

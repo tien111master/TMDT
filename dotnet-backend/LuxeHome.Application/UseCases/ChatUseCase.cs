@@ -175,7 +175,7 @@ namespace LuxeHome.Application.UseCases
             _ragService = ragService;
         }
 
-        private async Task<string> GenerateAiOrFallback(string userQuestion, string context, string fallbackReply)
+        private async Task<string> GenerateAiOrFallback(string userQuestion, string context, string fallbackReply, List<Message>? history = null)
         {
             if (_ragService == null || _ragService.IsOffline())
             {
@@ -184,7 +184,7 @@ namespace LuxeHome.Application.UseCases
 
             try
             {
-                var aiReply = await _ragService.GenerateReplyAsync(userQuestion, context, RagSystemInstruction);
+                var aiReply = await _ragService.GenerateReplyAsync(userQuestion, context, RagSystemInstruction, history);
                 if (!string.IsNullOrWhiteSpace(aiReply)) return aiReply;
             }
             catch (Exception ex)
@@ -192,7 +192,7 @@ namespace LuxeHome.Application.UseCases
                 Console.WriteLine($"[RAG fallback] {ex.Message}");
             }
 
-            return fallbackReply; // OpenAI lỗi/offline -> dùng lại câu trả lời cứng, không vỡ trận
+            return fallbackReply;
         }
 
         private static string BuildProductContext(IEnumerable<ProductSummary> list)
@@ -231,7 +231,7 @@ namespace LuxeHome.Application.UseCases
 
             var products = await GetActiveProductsAsync();
 
-            return await BuildReplyAsync(normalized, products);
+            return await BuildReplyAsync(normalized, products, messages);
         }
 
         private static bool IsGreeting(string normalized)
@@ -288,7 +288,10 @@ namespace LuxeHome.Application.UseCases
             }).ToList();
         }
 
-        private async Task<string> BuildReplyAsync(string normalizedMessage, List<ProductSummary> products)
+        private async Task<string> BuildReplyAsync(
+    string normalizedMessage,
+    List<ProductSummary> products,
+    List<Message> messages)
         {
             bool hasOutOfScopeTrigger = OutOfScopeTriggerWords.Any(kw => normalizedMessage.Contains(kw));
 
@@ -300,7 +303,7 @@ namespace LuxeHome.Application.UseCases
                 {
                     var fallback = BuildCompareReply(matches[0], matches[1]);
                     var ctx = BuildProductContext(matches);
-                    return await GenerateAiOrFallback(normalizedMessage, ctx, fallback);
+                    return await GenerateAiOrFallback(normalizedMessage, ctx, fallback, messages);
                 }
             }
 
@@ -311,7 +314,7 @@ namespace LuxeHome.Application.UseCases
                 var fallback = BuildSingleProductReply(nameMatch);
                 if (hasOutOfScopeTrigger) fallback += MixedTopicNote;
                 var ctx = BuildProductContext(new[] { nameMatch });
-                return await GenerateAiOrFallback(normalizedMessage, ctx, fallback);
+                return await GenerateAiOrFallback(normalizedMessage, ctx, fallback, messages);
             }
 
             // ---- 3) Các nhóm FAQ / chính sách (không phụ thuộc sản phẩm cụ thể) ----
@@ -410,7 +413,7 @@ namespace LuxeHome.Application.UseCases
             if (hasOutOfScopeTrigger) finalReply += MixedTopicNote;
 
             var matchedCtx = BuildProductContext(matched);
-            return await GenerateAiOrFallback(normalizedMessage, matchedCtx, finalReply);
+            return await GenerateAiOrFallback(normalizedMessage, matchedCtx, finalReply, messages);
         }
 
         private static string BuildSingleProductReply(ProductSummary p)
