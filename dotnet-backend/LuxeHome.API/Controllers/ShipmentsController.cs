@@ -30,7 +30,11 @@ namespace LuxeHome.API.Controllers
         public async Task<IActionResult> GetOrdersToDeliver()
         {
             var orders = await _db.Orders
-                .Where(o => o.OrderStatus == "SHIPPING" || o.OrderStatus == "DELIVERY_FAILED")
+                .Where(o => (o.OrderStatus == "SHIPPING" || o.OrderStatus == "DELIVERY_FAILED")
+                        && !_db.Shipments.Any(s => s.OrderId == o.Id &&
+                                (s.ShippingStatus == "WAITING_CARRIER"
+                                || s.ShippingStatus == "RECEIVED"
+                                || s.ShippingStatus == "IN_TRANSIT")))
                 .OrderBy(o => o.Id)
                 .Select(o => new
                 {
@@ -41,7 +45,7 @@ namespace LuxeHome.API.Controllers
                     o.ShippingAddress,
                     o.OrderStatus,
                     o.ShippingStatus,
-                    o.StaffNote // dùng để Kho "Xem lý do thất bại" nếu có
+                    o.StaffNote
                 })
                 .ToListAsync();
 
