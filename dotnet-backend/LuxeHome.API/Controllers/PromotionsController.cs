@@ -242,6 +242,18 @@ namespace LuxeHome.API.Controllers
             });
         }
 
+        private static string NormalizePromotionType(string? rawType)
+        {
+            var upper = (rawType ?? "").ToUpperInvariant();
+
+            if (upper.Contains("PERCENT")) return "PERCENT";
+            if (upper.Contains("FREESHIP") || upper.Contains("FREE_SHIP")) return "FREESHIP";
+            if (upper.Contains("INSTALLATION")) return "INSTALLATION";
+            if (upper.Contains("FIXED") || upper.Contains("AMOUNT")) return "FIXED";
+
+            return "UNKNOWN";
+        }
+
         private void ClearPromotionsCache()
         {
             _cache.Remove(CouponsCacheKey);
@@ -351,7 +363,7 @@ namespace LuxeHome.API.Controllers
                     });
                 }
 
-                var type = promotion.PromotionType?.ToUpper() ?? "";
+                var type = NormalizePromotionType(promotion.PromotionType);
                 var value = promotion.DiscountValue ?? 0;
 
                 decimal discountAmount = 0;
@@ -361,25 +373,18 @@ namespace LuxeHome.API.Controllers
                 switch (type)
                 {
                     case "PERCENT":
-                    case "PERCENTAGE":
                         discountAmount = request.SubtotalAmount * value / 100;
-
-                        if (promotion.MaxDiscountAmount != null &&
-                            discountAmount > promotion.MaxDiscountAmount.Value)
+                        if (promotion.MaxDiscountAmount != null && discountAmount > promotion.MaxDiscountAmount.Value)
                         {
                             discountAmount = promotion.MaxDiscountAmount.Value;
                         }
-
                         break;
 
                     case "FIXED":
-                    case "AMOUNT":
-                    case "FIXED_AMOUNT":
                         discountAmount = value;
                         break;
 
                     case "FREESHIP":
-                    case "FREE_SHIP":
                         shippingDiscount = request.ShippingFee;
                         break;
 
@@ -570,7 +575,7 @@ namespace LuxeHome.API.Controllers
 
                     if (isUsable && checkOrderCondition)
                     {
-                        var type = p.PromotionType?.ToUpper() ?? "";
+                        var type = NormalizePromotionType(p.PromotionType);
                         var value = p.DiscountValue ?? 0;
 
                         switch (type)
